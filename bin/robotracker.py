@@ -9,8 +9,7 @@ class App():
 		master.grid_rowconfigure(1, weight=1)
 		master.grid_columnconfigure(0, weight=1)		
 		master.grid_columnconfigure(1, weight=1)
-
-		#Need to set the default size here
+		master.minsize(600,480)		
 		
 		frame1 = Frame(master, background="blue")
 		frame1.grid(column = 0, row = 0, sticky='nsew')	
@@ -18,8 +17,10 @@ class App():
 		frame2 = Frame(master, background="green")
 		frame2.grid(column = 1, row = 0, sticky='nsew')
 
-		frame2 = Frame(master, background="red")
+		frame2 = Frame(master, background="white")
 		frame2.grid(column = 0, row = 1, sticky='nsew')
+		frame2a = Frame(master,background="black", in_=frame2)
+		frame2a.grid(in_=frame2, sticky='nsew')
 
 		frame2 = Frame(master, background="bisque")
 		frame2.grid(column = 1, row = 1, sticky='nsew')		
