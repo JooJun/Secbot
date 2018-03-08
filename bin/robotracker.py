@@ -1,8 +1,45 @@
+from __future__ import print_function #For openCV
+
 from tkinter import *
 from tkinter import ttk
 
+#For openCV
+
+from PIL import Image
+from PIL import ImageTk
+import threading
+import datetime
+import imutils
+import cv2
+import os
+
+class videoStream:
+	def __init__(self,vs,output_path = "./"):
+		self.vs = vs
+		self.outputPath = output_path
+		self.frame = None
+		self.thread = None
+		self.stopEvent = None	
+
+		self.panel = None
+		  
+		
+		# start a thread that constantly pools the video sensor for
+		# the most recently read frame
+		self.stopEvent = threading.Event()
+		self.thread = threading.Thread(target=self.videoLoop, args=())
+		self.thread.start()
+ 
+		# set a callback to handle when the window is closed
+		self.root.wm_title("PyImageSearch PhotoBooth")
+		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
+		
+
 class App:
 	def __init__(self,master,res):	
+	
+		videostream = videoStream(cv2.VideoCapture(0))
+			
 	
 		#Sets the icon and titlebar text (Quite unnecessary but looks better
 		root.iconbitmap(r'c:\Python34\DLLs\py.ico')		
