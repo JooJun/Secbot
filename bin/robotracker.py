@@ -9,6 +9,7 @@ from PIL import Image
 from PIL import ImageTk
 import threading
 import datetime
+import time
 import imutils
 import cv2
 import os
@@ -19,10 +20,8 @@ class videoStream:
 		self.outputPath = output_path
 		self.frame = None
 		self.thread = None
-		self.stopEvent = None	
-
-		self.panel = None
-		  
+		self.stopEvent = None
+		self.panel = None		  
 		
 		# start a thread that constantly pools the video sensor for
 		# the most recently read frame
@@ -99,7 +98,14 @@ class App:
 res = (600,480)
 root = Tk()
 app = App(root,res)
-app.write_to_console()
+
+print("[INFO] warming up camera...")
+vs = VideoStream(0)#.start()
+time.sleep(2.0)
+
+vsa = videoStream(vs)
+
+# app.write_to_console()
 
 # try:	
 # except:
