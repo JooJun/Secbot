@@ -14,9 +14,12 @@ axis_names = {
 axis_map = []
 
 # Open the joystick device.
-fn = '/dev/input/js0'
-jsdev = open(fn, 'rb') 
-
+try:
+	fn = '/dev/input/js0'
+	jsdev = open(fn, 'rb') 
+except:
+	"Controller not found"
+	
 # Get the device name.
 buf = bytearray(63)
 buf = array.array('b', [ord('\0')] * 64)
@@ -61,3 +64,4 @@ try:
 finally:
 	motors.setSpeeds(0, 0)
 	motors.disable()
+	print("Disabled motors")
