@@ -1,7 +1,6 @@
 import os, struct, array
 from fcntl import ioctl
 from dual_mc33926_rpi import motors, MAX_SPEED
-
 # Store the states
 axis_states = {}
 
