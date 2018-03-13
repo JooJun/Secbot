@@ -6,12 +6,6 @@ import cv2 as cv
 from threading import Thread
 from PIL import Image, ImageTk	
 
-
-# class videoFeed:
-	# def __init__(self):		
-		# self.vs = cv.VideoCapture(0)#Define the capture device
-		# delf.current_image	
-
 class App:
 	def __init__(self,master,res):			
 	
@@ -25,9 +19,9 @@ class App:
 		
 		# self.destructor function gets fired when the window is closed (not working)
 		# self.master.protocol('ROBOTRACKER v1.0', self.destructor)
-		 
-		#self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
-		self.vs = cv.VideoCapture('http://192.168.1.154:4747')		
+		
+		self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
+		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")					
 		
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
@@ -60,7 +54,7 @@ class App:
 		self.frame3.grid_columnconfigure(0,weight = 1)
 		
 		self.scroll=Scrollbar()		
-		self.textArea = Text(self.frame3,wrap=WORD, yscrollcommand=self.scroll.set, foreground="green", background="black", width=1, height=1, state=DISABLED)		
+		self.textArea = Text(self.frame3,wrap=WORD, yscrollcommand=self.scroll.set, foreground="black", background="white", width=1, height=1, state=DISABLED)		
 		self.textArea.grid(column=0,row=0,sticky='nsew')					
 
 		#Frame 4
@@ -75,6 +69,7 @@ class App:
 		# textArea = Text(frame3, width=50, height=20, wrap=WORD, yscrollcommand=scroll.set, foreground="black")
 	
 	def video_feed(self):
+		
 		#print(self.image_box.winfo_width(),self.image_box.winfo_height())			
 		ok, frame = self.vs.read()  # read frame from video stream
 		# frame = cv.resize(frame, (1280,720))
@@ -92,18 +87,6 @@ class App:
 			self.image_box.config(image=imgtk)  # show the image
 			#self.root.attributes("-fullscreen",True)
 		self.master.after(3, self.video_feed)  # call the same function after 30 milliseconds
-	
-		# while(True):
-			# # Capture frame-by-frame
-			# ret, frame = self.cap.read()			
-			# # frame = cv.cvtColor(frame, cv.COLOR)
-			# # Display the resulting frame
-			# cv.imshow('frame',frame)
-			# if cv.waitKey(1) & 0xFF == ord('q'):
-				# break
-				# # When everything done, release the capture
-				# cap.release()
-				# cv.destroyAllWindows()
 				
 	def write_to_console(self):
 		text = open('test_text.txt', 'r')
