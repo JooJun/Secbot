@@ -1,18 +1,20 @@
 import os, struct, array
 from fcntl import ioctl
 from dual_mc33926_rpi import motors, MAX_SPEED
-# Store the states
+
+# Create dictionary to store the axis states
 axis_states = {}
 
-# These constants were borrowed from linux/input.h
+#Creating a dictionary of axis names, allows the use of easy labels such as 'leftstick'
 axis_names = {	
 	0x01 : 'leftstick',
 	0x05 : 'rightstick'
 }
 
+#axis map creation
 axis_map = []
 
-# Open the joystick device.
+# Open the joystick device from the system, raises error if not connected and quits program.
 try:
 	fn = '/dev/input/js0'
 	jsdev = open(fn, 'rb') 
