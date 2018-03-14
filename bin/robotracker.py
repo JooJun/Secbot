@@ -14,7 +14,8 @@ class App:
 		#Pass the parameter master to variable self.master
 		self.master = master
 		#key binding definition for f key to fullscreen function
-		self.master.bind('<Key-f>', self.fullscreen)
+		self.master.bind('<Key>', self.event_handler)
+		
 		self.fullscreen_status = False		
 		
 		#set the titlebar text
@@ -23,8 +24,8 @@ class App:
 		# self.destructor function gets fired when the window is closed (not working)
 		# self.master.protocol('ROBOTRACKER v1.0', self.destructor)
 				
-		#self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
-		self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
+		self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
+		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
 		
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
@@ -83,18 +84,26 @@ class App:
 			imgtk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter 						
 			self.image_box.imgtk = imgtk  # anchor imgtk so as not be deleted by garbage-collector		
 			self.image_box.config(image=imgtk)  # show the image			
-		self.master.after(3, self.video_feed)  # call the same function after 30 milliseconds
+		self.master.after(10, self.video_feed)  # call the same function after 30 milliseconds
 		
-	def fullscreen(self,args):
-		if self.fullscreen_status == False:			
-			self.frame1.grid(columnspan = 2,rowspan=2)
-			self.frame1.lift()
-			self.current_image= self.current_image.resize([self.master.winfo_width(),int((self.master.winfo_width()*0.5625))])
-			print(self.image_box.winfo_height())
-			self.fullscreen_status = True			
-		else:
-			self.frame1.grid(columnspan = 1,rowspan=1)
-			self.fullscreen_status = False
+	def event_handler(self,event=None):			
+		if event.char == 'f' or event.keysym == 'Escape':
+			self.fullscreen(event)		
+			
+	def fullscreen(self,event=None):
+		if event.char == 'f':
+			if self.fullscreen_status == False:				
+				self.frame1.grid(columnspan = 2,rowspan=2)
+				self.frame1.lift()
+				self.current_image= self.current_image.resize([self.master.winfo_width(),int((self.master.winfo_width()*0.5625))])
+				self.fullscreen_status = True			
+			else:
+				self.frame1.grid(columnspan = 1,rowspan=1)
+				self.fullscreen_status = False
+		if event.keysym == 'Escape':
+			if self.fullscreen_status == True:
+				self.frame1.grid(columnspan = 1,rowspan=1)
+				self.fullscreen_status = False		
 				
 	def write_to_console(self):
 		text = open('test_text.txt', 'r')
@@ -114,5 +123,8 @@ app = App(root,res)
 app.video_feed()
 app.write_to_console()
 
+try:
 #start tkinter mainloop
-root.mainloop()
+	root.mainloop()
+finally:
+	pass

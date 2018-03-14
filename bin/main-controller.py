@@ -4,15 +4,14 @@ from dual_mc33926_rpi import motors, MAX_SPEED
 
 # Create dictionary to store the axis states
 axis_states = {}
+#axis map creation
+axis_map = []
 
 #Creating a dictionary of axis names, allows the use of easy labels such as 'leftstick'
 axis_names = {	
 	0x01 : 'leftstick',
 	0x05 : 'rightstick'
 }
-
-#axis map creation
-axis_map = []
 
 # Open the joystick device from the system, raises error if not connected and quits program.
 try:
@@ -59,8 +58,7 @@ try:
 		motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])	
 		#print ("Left stick value {}, Right stick value {}".format(axis_states['leftstick'], axis_states['rightstick']))
 
-#According to the example.py script this should stop the motors even if
-#there is an exception of user presses Ctrl-C to kill process
+#Stop the motors if there is an exception of user presses Ctrl-C to kill process
 
 finally:
 	motors.setSpeeds(0, 0)
