@@ -10,18 +10,18 @@ axis_map = []
 #Creating a dictionary of axis names, allows the use of easy labels such as 'leftstick'
 axis_names = {	
 	0x01 : 'leftstick',
-	0x05 : 'rightstick'
+	0x04 : 'rightstick'
 }
 
-# Open the joystick device from the system, raises error if not connected and quits program.
-try:
-	fn = '/dev/input/js0'
-	jsdev = open(fn, 'rb') 
-except:
-	raise SystemExit("Playstation controller not found")
-	
+jsdev = False
+while not jsdev:
+	try:
+		fn = '/dev/input/js0'
+		jsdev = open(fn, 'rb')
+	except:
+		pass
+
 # Get the device name.
-buf = bytearray(63)
 buf = array.array('b', [ord('\0')] * 64)
 ioctl(jsdev, 0x80006a13 + (0x10000 * len(buf)), buf) # JSIOCGNAME(len)
 js_name = buf.tostring()
@@ -50,8 +50,8 @@ try:
 		if evbuf:
 			time, value, type, number = struct.unpack('IhBB', evbuf)
 
-			if type & 0x02:
-				axis = axis_map[number]
+			if type & 0x02:				
+				axis = axis_map[number]			
 				if axis == "leftstick" or axis == "rightstick":				
 					axis_states[axis] = int(value*(480/32767))			
 					

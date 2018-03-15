@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 #open cv imports
-import numpy as np
+#import numpy as np
 import cv2 as cv
 #from threading import Thread
 from PIL import Image, ImageTk	
@@ -46,13 +46,11 @@ class App:
 		self.frame1.grid_columnconfigure(0,weight = 1)
 		
 		self.image_box = Label(self.frame1,width=self.frame1.winfo_width()*5,height=self.frame1.winfo_height()*5,background="black")
-		self.image_box.grid(sticky='nsew')		
-		#-------------------------------------------------------
+		self.image_box.grid(sticky='nsew')				
 		
 		#Frame 2 spare for later use
 		self.frame2 = Frame(self.master, background="black")
-		self.frame2.grid(column = 1, row = 0, sticky='nsew')		
-		#-------------------------------------------------------
+		self.frame2.grid(column = 1, row = 0, sticky='nsew')			
 		
 		#frame 3 also contains the TEXT BOX
 		self.frame3 = Frame(self.master, background="black")
@@ -62,13 +60,11 @@ class App:
 		
 		self.scroll=Scrollbar()		
 		self.textArea = Text(self.frame3,wrap=WORD, yscrollcommand=self.scroll.set, foreground="black", background="white", width=1, height=1, state=DISABLED)		
-		self.textArea.grid(column=0,row=0,sticky='nsew')					
-		#-------------------------------------------------------
+		self.textArea.grid(column=0,row=0,sticky='nsew')	
 		
 		#Frame 4 spare for later use
 		self.frame4 = Frame(self.master, background="black")
-		self.frame4.grid(column = 1, row = 1, sticky='nsew')
-		#-------------------------------------------------------
+		self.frame4.grid(column = 1, row = 1, sticky='nsew')		
 		
 	def video_feed(self):				
 		ok, frame = self.vs.read()  # read frame from video stream
