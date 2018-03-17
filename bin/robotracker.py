@@ -1,9 +1,9 @@
 from tkinter import *
 from tkinter import ttk
-#open cv imports
-#import numpy as np
-import cv2 as cv
 #from threading import Thread
+
+#open cv imports
+import cv2 as cv
 from PIL import Image, ImageTk	
 
 class App:
@@ -22,10 +22,19 @@ class App:
 		self.master.title("ROBOTRACKER v1.0")
 		
 		# self.destructor function gets fired when the window is closed (not working)
-		# self.master.protocol('ROBOTRACKER v1.0', self.destructor)
-				
-		self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
-		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
+		# self.master.protocol('ROBOTRACKER v1.0', self.destructor)	
+		
+		#self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
+		
+		# try:
+			# print("got here")
+			# self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
+		# except:
+			# print("and here")
+			# self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')		
+		
+		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream"):
+		self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')		
 		
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
@@ -46,7 +55,10 @@ class App:
 		self.frame1.grid_columnconfigure(0,weight = 1)
 		
 		self.image_box = Label(self.frame1,width=self.frame1.winfo_width()*5,height=self.frame1.winfo_height()*5,background="black")
-		self.image_box.grid(sticky='nsew')				
+		self.image_box.grid(sticky='nsew')
+		
+		#bind double mouse click to the image_box
+		self.image_box.bind('<Double-Button>', self.event_handler)
 		
 		#Frame 2 spare for later use
 		self.frame2 = Frame(self.master, background="black")
@@ -83,11 +95,11 @@ class App:
 		self.master.after(10, self.video_feed)  # call the same function after 30 milliseconds
 		
 	def event_handler(self,event=None):			
-		if event.char == 'f' or event.keysym == 'Escape':
+		if event.char == 'f' or event.keysym == 'Escape' or event.num == 1:
 			self.fullscreen(event)		
 			
 	def fullscreen(self,event=None):
-		if event.char == 'f':
+		if event.char == 'f' or event.num == 1:
 			if self.fullscreen_status == False:				
 				self.frame1.grid(columnspan = 2,rowspan=2)
 				self.frame1.lift()
