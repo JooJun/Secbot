@@ -5,7 +5,7 @@ import time
 #from threading import Thread
 
 #open cv imports
-import numpy as np
+import numpy
 import cv2 as cv
 from PIL import Image, ImageTk	
 
@@ -16,7 +16,6 @@ class App:
 		
 		#Pass the parameter master to variable self.master
 		self.master = master
-		
 		#key binding definition for f key to fullscreen function
 		self.master.bind('<Key>', self.event_handler)
 		
@@ -30,7 +29,6 @@ class App:
 		
 		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream"):
 		self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')		
-		# self.vs.set(CV_CAP_PROP_FPS , 60)
 		
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
@@ -63,57 +61,36 @@ class App:
 		#frame 3 contains the TEXT BOX
 		self.frame3 = Frame(self.master, background="black")
 		self.frame3.grid(column = 0, row = 1, sticky='nsew')	
-		self.frame3.grid_rowconfigure(0,weight = 1)		
-		self.frame3.grid_columnconfigure(0,weight = 10)
-		self.frame3.grid_columnconfigure(1,weight = 1)		
-				
-		self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)		
+		self.frame3.grid_rowconfigure(0,weight = 1)
+		self.frame3.grid_columnconfigure(0,weight = 1)
+		
+		self.scroll=Scrollbar()		
+		self.textArea = Text(self.frame3,wrap=WORD, yscrollcommand=self.scroll.set, foreground="black", background="white", width=1, height=1, state=DISABLED)		
 		self.textArea.grid(column=0,row=0,sticky='nsew')
-		self.scroll=Scrollbar(self.textArea, orient = VERTICAL)
-		
-		self.textArea.config(yscrollcommand=self.scroll.set) 	
-		self.scroll.config(command=self.textArea.yview)
-		self.scroll.grid(column=1, row=0)
-		
+		self.textArea.config(state=NORMAL)		
 		
 		#Frame 4 spare for later use
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')		
-		try:			
-			self.console_fhandle = open('C:\\Users\\paultobias\\Desktop\\console.txt','r')
-		except:
-			self.console_fhandle = False
-		self.console_modified = 0		
+		
+		self.console_fhandle = open('C:\\Users\\paultobias\\Desktop\\console.txt','r')
+		self.console_modified = 0
 		
 	def video_feed(self):				
-		# ok, frame = self.vs.read()  # read frame from video stream
-		# #print(int(self.image_box.winfo_height()*1.77777),int(self.image_box.winfo_height()))
-		# if ok:  # frame captured without any errors
-			# key = cv.waitKey(1)
-			# cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
-			# self.current_image = Image.fromarray(cvimage)  # convert image for PIL	
-			# if self.image_box.winfo_width()>1:			
-				# if self.image_box.winfo_height() < int((self.image_box.winfo_width()*0.5625)): 
-					# self.current_image=self.current_image.resize([int(self.image_box.winfo_height()*1.77777),(self.image_box.winfo_height())])					
-				# else:
-					# self.current_image=self.current_image.resize([self.image_box.winfo_width(),int((self.image_box.winfo_width()*0.5625))])					
-			# imgtk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter 						
-			# self.image_box.imgtk = imgtk  # anchor imgtk so as not be deleted by garbage-collector		
-			# self.image_box.config(image=imgtk)  # show the image			
-		# self.master.after(3, self.video_feed)  # call the same function after 30 milliseconds
-				
-		ok, frame = self.vs.read()
-		if ok:			
+		ok, frame = self.vs.read()  # read frame from video stream
+		if ok:  # frame captured without any errors
 			key = cv.waitKey(5)
-			image = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)			
-			#cv.imshow('frame',image)
-			self.current_image = Image.fromarray(image)
+			cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)  # convert colors from BGR to RGBA
+			self.current_image = Image.fromarray(cvimage)  # convert image for PIL			
 			if self.image_box.winfo_width()>1:
-				self.current_image = self.current_image.resize([self.image_box.winfo_width(),int((self.image_box.winfo_width()*0.5625))])			
-			imagetk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter 			
-			self.image_box.imgtk = imagetk  # anchor imgtk so as not be deleted by garbage-collector		
-			self.image_box.config(image=imagetk)  # show the image			
-		self.master.after(10, self.video_feed)
+				if self.image_box.winfo_height() < int((self.image_box.winfo_width()*0.5625)): 
+					self.current_image=self.current_image.resize([int(self.image_box.winfo_height()*1.77777),(self.image_box.winfo_height())])					
+				else:
+					self.current_image=self.current_image.resize([self.image_box.winfo_width(),int((self.image_box.winfo_width()*0.5625))])					
+			imgtk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter 						
+			self.image_box.imgtk = imgtk  # anchor imgtk so as not be deleted by garbage-collector		
+			self.image_box.config(image=imgtk)  # show the image			
+		self.master.after(3, self.video_feed)  # call the same function after 30 milliseconds
 	
 	def event_handler(self,event=None):			
 		if event.char == 'f' or event.keysym == 'Escape' or event.num == 1:
@@ -140,25 +117,10 @@ class App:
 		# text.close()	
 		
 	def write_to_console(self):
-		if self.console_fhandle:
-			if self.console_modified != time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime('C:\\Users\\paultobias\\Desktop\\console.txt'))):
-				self.console_list = []
-				for line in	self.console_fhandle:
-					self.console_list.append(line)				
-				for item in self.console_list:
-					self.textArea.config(state=NORMAL)
-					self.textArea.insert(END,item)
-					self.textArea.config(state=DISABLED)
-					self.textArea.see("end")
-		else:
-			self.textArea.config(state=NORMAL)
-			self.textArea.delete('1.0', END)
-			self.textArea.insert(INSERT,"No console data found")
-			self.textArea.config(state=DISABLED)
-			try:			
-				self.console_fhandle = open('C:\\Users\\paultobias\\Desktop\\console.txt','r')
-			except:
-				pass
+		if self.console_modified != time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime('C:\\Users\\paultobias\\Desktop\\console.txt'))):
+			self.console_list = []
+			for line in	self.console_fhandle:
+				self.console_list.append(line)
 		self.master.after(1000, self.write_to_console)
 	
 #resolution - height,width	
