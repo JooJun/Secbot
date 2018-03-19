@@ -1,3 +1,4 @@
+import paramiko
 from tkinter import *
 from tkinter import ttk
 import os
@@ -11,6 +12,10 @@ from PIL import Image, ImageTk
 
 class App:
 	def __init__(self,master,res):	
+	
+		self.ssh = paramiko.SSHClient()
+		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
 		#Sets the icon and titlebar text (Quite unnecessary but looks better)
 		root.iconbitmap('c:\Python34\DLLs\py.ico')		
 		
@@ -55,27 +60,38 @@ class App:
 		#bind double mouse click to the image_box
 		self.image_box.bind('<Double-Button>', self.event_handler)
 		
-		#Frame 2 spare for later use
+		#Frame 2 JPEG?
 		self.frame2 = Frame(self.master, background="black")
-		self.frame2.grid(column = 1, row = 0, sticky='nsew')			
+		self.frame2.grid(column = 1, row = 0)	
+		self.frame2.grid_rowconfigure(0,weight = 0)
+		self.frame2.grid_columnconfigure(0,weight = 0)			
+		
+		self.img = ImageTk.PhotoImage(Image.open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'))
+		self.pic_box = Canvas(self.frame2,background="black")
+		# self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
+		# self.pic_box.grid_columnconfigure(0,weight = 0)
+
+		self.pic_box.grid(sticky='nsew')
+		self.pic_box.config(image=self.img)
+		
 		
 		#frame 3 contains the TEXT BOX
 		self.frame3 = Frame(self.master, background="black")
-		self.frame3.grid(column = 0, row = 1, sticky='nsew')					
+		self.frame3.grid(column = 0, row = 1, sticky='nsew')	
+		self.frame3.grid_rowconfigure(0,weight = 1)
+		self.frame3.grid_columnconfigure(0,weight = 1)
+		# self.frame3.grid_columnconfigure(1,weight = 1)
 				
 		self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)		
-		# self.textArea.grid(sticky='nsew')
+		self.textArea.grid(sticky='nsew')
 	
-		self.scroll=Scrollbar(self.textArea, orient = VERTICAL)
+		#self.scroll=Scrollbar(self.textArea, orient = VERTICAL)
+		# self.scroll=Scrollbar(self.textArea)
+		# self.scroll.grid(column=1, row=0, sticky='nsew')
+		# self.textArea.config(yscrollcommand=self.scroll.set) 	
+		# self.scroll.config(command=self.textArea.yview)			
 		
-		self.textArea.config(yscrollcommand=self.scroll.set) 	
-		# self.scroll.config(command=self.textArea.yview)	
-
-		#Open the console file
-		try:			
-			self.console_fhandle = open('C:\\Users\\paultobias\\Desktop\\console.txt','r')
-		except:
-			self.console_fhandle = False
+		self.console_fhandle = False		
 			
 		self.console_modified = 0
 		
@@ -109,8 +125,7 @@ class App:
 			self.current_image = Image.fromarray(frame)#PIL stuff ?			
 			if self.image_box.winfo_width()>1:				
 				self.resize(self.current_size)				
-			imagetk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter 
-			self.image_box.imgtk = imagetk 	
+			imagetk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter
 			self.image_box.imgtk = imagetk  # anchor imgtk so as not be deleted by garbage-collector		
 			self.image_box.config(image=imagetk)  # show the image	
 		self.master.after(8, self.video_feed)			
@@ -132,8 +147,11 @@ class App:
 				self.fullscreen_status = False		
 				
 	def write_to_console(self):
+		ftp_client=self.ssh.open_sftp()
+		ftp_client.get('/home/pi/console.txt','C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt')
+		ftp_client.close()
 		if self.console_fhandle:
-			if self.console_modified != time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime('C:\\Users\\paultobias\\Desktop\\console.txt'))):
+			if self.console_modified != time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt'))):
 				self.console_list = []
 				for line in	self.console_fhandle:
 					self.console_list.append(line)				
@@ -145,22 +163,22 @@ class App:
 		else:
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
-			self.textArea.insert(INSERT,"No console data found")
-			self.textArea.config(state=DISABLED)
+			self.textArea.insert(INSERT,"Waiting for console data")
+			self.textArea.config(state=DISABLED)			
 			try:			
-				self.console_fhandle = open('C:\\Users\\paultobias\\Desktop\\console.txt','r')
+				self.console_fhandle = open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt','r')
 			except:
 				pass
 		self.master.after(1000, self.write_to_console)
 	
 #resolution - height,width	
-res = (480,600)
+res = (400,600)
 #create tkinter root
 root = Tk()
 
 #create instance of app class
 app = App(root,res)
-#call videofeed and write_to_console functions from app class
+# #call videofeed and write_to_console functions from app class
 app.video_feed()
 app.write_to_console()
 
