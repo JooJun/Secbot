@@ -1,3 +1,4 @@
+import argparse
 import paramiko
 from tkinter import *
 from tkinter import ttk
@@ -13,9 +14,9 @@ from PIL import Image, ImageTk
 class App:
 	def __init__(self,master,res):	
 	
-		self.ssh = paramiko.SSHClient()
-		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-		self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
+		# self.ssh = paramiko.SSHClient()
+		# self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		# self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
 		#Sets the icon and titlebar text (Quite unnecessary but looks better)
 		root.iconbitmap('c:\Python34\DLLs\py.ico')		
 		
@@ -66,13 +67,13 @@ class App:
 		self.frame2.grid_rowconfigure(0,weight = 0)
 		self.frame2.grid_columnconfigure(0,weight = 0)			
 		
-		self.img = ImageTk.PhotoImage(Image.open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'))
-		self.pic_box = Canvas(self.frame2,background="black")
-		# self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
-		# self.pic_box.grid_columnconfigure(0,weight = 0)
+		# self.img = ImageTk.PhotoImage(Image.open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'))
+		# self.pic_box = Canvas(self.frame2,background="black")
+		# # self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
+		# # self.pic_box.grid_columnconfigure(0,weight = 0)
 
-		self.pic_box.grid(sticky='nsew')
-		self.pic_box.config(image=self.img)
+		# self.pic_box.grid(sticky='nsew')
+		# self.pic_box.config(image=self.img)
 		
 		
 		#frame 3 contains the TEXT BOX
@@ -180,7 +181,7 @@ root = Tk()
 app = App(root,res)
 # #call videofeed and write_to_console functions from app class
 app.video_feed()
-app.write_to_console()
+#app.write_to_console()
 
 try:
 #start tkinter mainloop
