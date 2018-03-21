@@ -1,42 +1,42 @@
-import argparse
 import paramiko
 from tkinter import *
 from tkinter import ttk
 import os
-import time
+import datetime
 import threading
 
-#open cv imports
+#Video related
 import numpy as np
 import cv2 as cv
 from PIL import Image, ImageTk	
+from imutils.video import FPS
+from imutils.video import WebcamVideoStream
+from imutils.video import FileVideoStream
+import imutils
 
 class App:
-	def __init__(self,master,res):	
-	
-		# self.ssh = paramiko.SSHClient()
-		# self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-		# self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
+	def __init__(self,master,res):			
 		#Sets the icon and titlebar text (Quite unnecessary but looks better)
 		root.iconbitmap('c:\Python34\DLLs\py.ico')		
 		
 		#Pass the parameter master to variable self.master
 		self.master = master
 		
+		
+		
 		#key binding definition for f key to fullscreen function
 		self.master.bind('<Key>', self.event_handler)
 		
+		#Fullscreen status checks the fullscreen status when key or mouse enters/exits fullscreen
 		self.fullscreen_status = False		
 		
 		#set the titlebar text
-		self.master.title("ROBOTRACKER v1.0")	
+		self.master.title("ROBOTRACKER v1.0")			
 		
-		self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")		
-		#self.vs = cv.VideoCapture('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')
+		##Set the video source
+		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
+		self.vs = WebcamVideoStream(src="rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()
 		
-		self.raw_image = False
-		self.current_image = False
-				
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
 		self.master.grid_rowconfigure(1, weight=1)
@@ -50,7 +50,7 @@ class App:
 		#Set 4 frames and put them into the grid (grid contains 4 equal boxes)
 		
 		#Frame 1 will hold the VIDEO STREAM
-		self.frame1 = Frame(self.master, background="grey")
+		self.frame1 = Label(self.master, background="grey")
 		self.frame1.grid(column = 0, row = 0, sticky='nsew')
 		self.frame1.grid_rowconfigure(0,weight = 1)
 		self.frame1.grid_columnconfigure(0,weight = 1)
@@ -63,7 +63,7 @@ class App:
 		
 		#Frame 2 JPEG?
 		self.frame2 = Frame(self.master, background="black")
-		self.frame2.grid(column = 1, row = 0)	
+		self.frame2.grid(column = 1, row = 0, sticky='nsew')	
 		self.frame2.grid_rowconfigure(0,weight = 0)
 		self.frame2.grid_columnconfigure(0,weight = 0)			
 		
@@ -73,8 +73,7 @@ class App:
 		# # self.pic_box.grid_columnconfigure(0,weight = 0)
 
 		# self.pic_box.grid(sticky='nsew')
-		# self.pic_box.config(image=self.img)
-		
+		# self.pic_box.config(image=self.img)		
 		
 		#frame 3 contains the TEXT BOX
 		self.frame3 = Frame(self.master, background="black")
@@ -92,46 +91,48 @@ class App:
 		# self.textArea.config(yscrollcommand=self.scroll.set) 	
 		# self.scroll.config(command=self.textArea.yview)			
 		
-		self.console_fhandle = False		
-			
-		self.console_modified = 0
+		self.console_fhandle = False				
+		self.console_modified_time = 0
 		
 		#Frame 4 spare for later use
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')	
 		
-		#For video feed
+		#For video feed, this is set to compare if self.image_box has changed size triggering a resize of the video picture
 		self.image_box_previous_size = [0,0]
 		
-	def resize(self,size):
-		# if size[0]> 960 or size[1] > 540: 
-		# if size[0]> 1280 or size[1] > 720:
-			#self.current_image=self.current_image.resize([960,540])
-		#else:
-		self.current_image=self.current_image.resize(size)
-		self.image_box_previous_size = (self.image_box.winfo_width(), self.image_box.winfo_height())
 			
-	def video_feed(self):
+	def video_feed(self):		
+		frame = self.vs.read()	#read the next frame 
+		
+		##resize the image if self.image_box has changed size
 		if self.image_box.winfo_width()>1 and self.image_box_previous_size != (self.image_box.winfo_width(), self.image_box.winfo_height()):			
 			if self.image_box.winfo_height() < int((self.image_box.winfo_width()*0.5625)): 
-				self.current_size = ([int(self.image_box.winfo_height()*1.77777),(self.image_box.winfo_height())])	
-
+				frame = imutils.resize(frame 
+					,width=int(self.image_box.winfo_height()*1.77777) #image width
+					,height=self.image_box.winfo_height()#image height
+					) 
+				self.image_box_previous_size = [
+					int(self.image_box.winfo_height()*1.77777)#set new value for 'previous' width
+					,self.image_box.winfo_height()#set new value for 'previous' height
+					]
 			else:
-				self.current_size = ([self.image_box.winfo_width(),int((self.image_box.winfo_width()*0.5625))])
-				
-		ok, frame = self.vs.read()
-		if ok:			
-			#key = cv.waitKey(10)			
-			cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)			
-			self.current_image = Image.fromarray(frame)#PIL stuff ?			
-			if self.image_box.winfo_width()>1:				
-				self.resize(self.current_size)				
-			imagetk = ImageTk.PhotoImage(image=self.current_image)  # convert image for tkinter
-			self.image_box.imgtk = imagetk  # anchor imgtk so as not be deleted by garbage-collector		
-			self.image_box.config(image=imagetk)  # show the image	
-		self.master.after(8, self.video_feed)			
+				frame = imutils.resize(frame
+					,width=self.image_box.winfo_width()	#image width
+					,height=int((self.image_box.winfo_width()*0.5625)))	#image height
+				self.image_box_previous_size = [
+					self.image_box.winfo_width()#set new value for 'previous' width	
+					,int((self.image_box.winfo_width()*0.5625))#set new value for 'previous' height
+					]	
+		##process the raw frame
+		cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)	#colours picture correctly		
+		current_image = Image.fromarray(cvimage)	#Something to do with PIL, processes the matrix array			
+		imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
+		self.image_box.imgtk = imagetk  # stops garbage collection		
+		self.image_box.config(image=imagetk)  # show the image in image_box			
+		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds		
 	
-	def event_handler(self,event=None):			
+	def event_handler(self,event=None):		
 		if event.char == 'f' or event.keysym == 'Escape' or event.num == 1:
 			self.fullscreen(event)	
 		if event.char == 'q':
@@ -148,11 +149,17 @@ class App:
 				self.fullscreen_status = False		
 				
 	def write_to_console(self):
-		ftp_client=self.ssh.open_sftp()
-		ftp_client.get('/home/pi/console.txt','C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt')
-		ftp_client.close()
-		if self.console_fhandle:
-			if self.console_modified != time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt'))):
+		# try:
+			# #ftp_client=self.ssh.open_sftp()
+			# #ftp_client.get('/home/pi/console.txt','C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt')
+			# #fhandle = ftp_client.open('/home/pi/console.txt')
+			# #ftp_client.close()
+			# #self.console_fhandle = open('/home/pi/console.txt','r')
+		# except:
+			# pass
+		if self.console_fhandle:	
+			modifiedtime = self.ftp_client.stat('/home/pi/console.txt').st_mtime			
+			if modifiedtime != self.console_modified_time:			
 				self.console_list = []
 				for line in	self.console_fhandle:
 					self.console_list.append(line)				
@@ -161,30 +168,34 @@ class App:
 					self.textArea.insert(END,item)
 					self.textArea.config(state=DISABLED)
 					self.textArea.see("end")
+				self.console_modified_time = modifiedtime
 		else:
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
 			self.textArea.insert(INSERT,"Waiting for console data")
 			self.textArea.config(state=DISABLED)			
-			try:			
-				self.console_fhandle = open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\console.txt','r')
+			try:
+				self.ssh = paramiko.SSHClient()
+				self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+				self.ssh.connect('192.168.1.176', username='pi', password='raspberry')		
+				self.ftp_client=self.ssh.open_sftp()
+				self.console_fhandle = self.ftp_client.open('/home/pi/console.txt')
 			except:
 				pass
 		self.master.after(1000, self.write_to_console)
 	
 #resolution - height,width	
 res = (400,600)
-#create tkinter root
-root = Tk()
 
-#create instance of app class
-app = App(root,res)
-# #call videofeed and write_to_console functions from app class
-app.video_feed()
-#app.write_to_console()
-
-try:
-#start tkinter mainloop
+if __name__ == '__main__':
+	#create tkinter root
+	root = Tk()
+	#create instance of app class
+	app = App(root,res)
+	# #call videofeed and write_to_console functions from app class
+	app.video_feed()
+	app.write_to_console()
+	#start tkinter mainloop
 	root.mainloop()
-finally:
-	pass
+	
+app.vs.stop()
