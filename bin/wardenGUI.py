@@ -103,6 +103,10 @@ class App:
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')	
 		
+		self.ssh = paramiko.SSHClient()
+		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+			
+		
 	def image_update(self):
 		imagetk = ImageTk.PhotoImage(Image.open('pic.jpg'))
 		self.image_frame.config(image=imagetk)
@@ -187,12 +191,10 @@ class App:
 			self.textArea.insert(INSERT,"Waiting for console data")
 			self.textArea.config(state=DISABLED)
 			self.console_file_exists = False
-			try:
-				self.ssh = paramiko.SSHClient()
-				self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-				self.ssh.connect('192.168.1.176', username='pi', password='raspberry')		
+			try:					
 				self.ftp_client=self.ssh.open_sftp()
 				self.console_fhandle = self.ftp_client.open(self.console_file_path)
+				self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
 				if self.console_fhandle:
 					self.console_file_exists = True
 			except:
