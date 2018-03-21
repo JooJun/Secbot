@@ -159,8 +159,7 @@ class App:
 		try:
 			self.console_file_exists = self.ftp_client.stat(self.console_file_path)
 		except:
-			self.console_file_exists = False
-			
+			self.console_file_exists = False			
 			
 		#check if the file and file handle exists
 		if self.console_file_exists:						
@@ -170,7 +169,7 @@ class App:
 				console_list = []								
 				for line in	file:					
 					console_list.append(line)
-					
+				print("got here")	
 				self.textArea.config(state=NORMAL)
 				self.textArea.delete('1.0', END)
 				self.textArea.config(state=DISABLED)
@@ -186,7 +185,8 @@ class App:
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
 			self.textArea.insert(INSERT,"Waiting for console data")
-			self.textArea.config(state=DISABLED)			
+			self.textArea.config(state=DISABLED)
+			self.console_file_exists = False
 			try:
 				self.ssh = paramiko.SSHClient()
 				self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
