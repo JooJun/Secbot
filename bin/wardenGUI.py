@@ -87,6 +87,7 @@ class App:
 		self.console_fhandle = False	
 		self.console_file_exists = False
 		self.console_modified_time = 0
+		self.console_count = 0
 		self.console_file_path = '/home/pi/console.txt'
 		#self.console_file_path = 'C://Users//paultobias//Desktop//console.txt'			
 		
@@ -102,9 +103,10 @@ class App:
 		self.img_path = 'C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'	
 		self.img_modified_time = 0
 		
-		##initialise
+		#ssh settings
 		self.ssh = paramiko.SSHClient()
 		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		
 		
 		self.video_conn_ready = False
 		self.pi_conn_ready = False
@@ -118,7 +120,7 @@ class App:
 		
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
 		self.video_feed_thread.daemon = True
-		self.video_feed_thread.start()	
+		self.video_feed_thread.start()		
 		
 		self.video_feed_init_thread = Thread(target=self.video_feed_initialiser,args=())
 		self.video_feed_init_thread.daemon = True
@@ -130,13 +132,14 @@ class App:
 		
 		self.img_thread = threading.Thread(target=self.image_update,args=())
 		self.img_thread.daemon = True
-		self.img_thread.start()		
+		self.img_thread.start()			
+		
+		self.console_list = []
 	
 	def conn_ready(self):			
 		while True:	
 			pi = os.system("ping -n 1 " + '192.168.1.176')
-			video = os.system("ping -n 1 " + '192.168.1.10')
-			
+			video = os.system("ping -n 1 " + '192.168.1.10')			
 			if pi == 0:
 				self.pi_conn_ready = True
 			else:
@@ -147,7 +150,7 @@ class App:
 			else:
 				self.video_conn_ready = False
 				self.video_ready = False				
-			time.sleep(3)
+			time.sleep(5)
 			
 	def video_feed_initialiser(self):
 		if not self.video_ready:
@@ -189,7 +192,13 @@ class App:
 			current_image = Image.fromarray(cvimage)	#Something to do with PIL, processes the matrix array			
 			imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
 			self.video_frame.imgtk = imagetk  # stops garbage collection		
-			self.video_frame.config(image=imagetk)  # show the image in image_box	
+			self.video_frame.config(image=imagetk)  # show the image in image_box
+			
+		else:
+			try:
+				self.video_frame.config(image=self.img)
+			except:
+				pass
 		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds
 		
 	def event_handler(self,event=None):		
@@ -207,47 +216,84 @@ class App:
 			else:
 				self.frame1.grid(columnspan = 1,rowspan=1)
 				self.fullscreen_status = False
-				
-	def write_to_console(self):		
-		try:
-			self.console_fhandle = self.ftp_client.open(self.console_file_path)
-			modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime		
-		except:
-			self.console_file_exists = False	
-		if self.console_file_exists:							
-			if modifiedtime != self.console_modified_time:
-				self.console_list = []##need to change this to check line number difference and only bring new lines						
-				for line in	self.console_fhandle:					
-					self.console_list.append(line)
 	
-				self.textArea.config(state=NORMAL)
-				self.textArea.delete('1.0', END)
-				self.textArea.config(state=DISABLED)
-				
-				for item in self.console_list:
-					self.textArea.config(state=NORMAL)					
-					self.textArea.insert(END,item)
+	# def ssh_establish(self):		
+		# if self.ssh_ready == False and self.pi_conn_ready == True:			
+			# try:				
+				# self.ssh.connect('192.168.1.176', username='pi', password='raspberry')	
+				# self.ftp_client=self.ssh.open_sftp()
+				# self.ssh_ready = True		
+			# except:
+				# pass
+
+	def write_to_console(self):	
+		# print(self.ssh_ready, self.console_file_exists)
+		try:	
+			modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime	
+			# print (modifiedtime)
+		except:
+			self.console_file_exists = False
+			self.modified_time = 0
+			self.console_count = 0
+			self.console_list = []			
+			# try:
+				# self.ssh.exec_command('ls', timeout=5)				
+			# except:
+				# self.ssh_ready = False				
+		if self.console_file_exists:
+			# print("file exists")			
+			if modifiedtime != self.console_modified_time or len(self.console_list) <1:
+				# print("times are different")
+				#print(self.console_fhandle.readlines())
+				file_temp = self.console_fhandle.readlines()
+				# print(file_temp)
+				for item in file_temp:
+					# print(item)
+					self.console_list.append(item)
+				list_length = len(self.console_list)
+				while self.console_count < list_length-1:
+					self.textArea.config(state=NORMAL)		
+					self.textArea.insert(END,self.console_list[self.console_count])
 					self.textArea.config(state=DISABLED)
 					self.textArea.see("end")
-				self.console_modified_time = modifiedtime
-				self.console_fhandle.close()
+					self.console_count+=1
+				self.console_modified_time = modifiedtime			
 		else:
+			# try:			
+				# self.ssh.exec_command('ls', timeout=5)
+			# except:
+				# self.ssh_ready = False
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
-			self.textArea.insert(INSERT,"Waiting for console data")
+			self.textArea.insert(INSERT,"Waiting for console data")			
 			self.textArea.config(state=DISABLED)
-			self.ssh_ready = False
-			try:
-				self.ssh.connect('192.168.1.176', username='pi', password='raspberry')	
-				self.ftp_client=self.ssh.open_sftp()		
-				self.console_fhandle = self.ftp_client.open(self.console_file_path)
+			
+			self.console_count = 0	
+			if self.ssh_ready == True:
 				if self.console_fhandle:
-					self.console_file_exists = True
-			except:
-				pass
-		self.master.after(1000, self.write_to_console)	
-	
-#resolution - height,width	
+					self.console_fhandle.close()
+				#self.console_fhandle = self.ftp_client.open(self.console_file_path)	
+				try:
+					self.console_fhandle = self.ftp_client.open(self.console_file_path)	
+					self.console_file_exists = True					
+					self.textArea.config(state=NORMAL)
+					self.textArea.delete('1.0', END)
+					self.textArea.config(state=DISABLED)
+				except:
+					self.console_file_exists = False					
+			else:
+				# self.ssh_establish()
+				if self.ssh_ready == False and self.pi_conn_ready == True:
+					# print("got here")
+					try:				
+						self.ssh.connect('192.168.1.176', username='pi', password='raspberry')	
+						self.ftp_client=self.ssh.open_sftp()
+						self.ssh_ready = True		
+					except:
+						pass
+		self.master.after(1000, self.write_to_console)		
+		
+#Opening resolution - height,width	
 res = (400,600)
 
 if __name__ == '__main__':
