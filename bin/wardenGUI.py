@@ -94,19 +94,13 @@ class App:
 		#Frame 4 image of map
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')	
+		self.frame4.grid_rowconfigure(0,weight = 1)
+		self.frame4.grid_columnconfigure(0,weight = 1)
 		
 		self.image_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
 		self.image_frame.grid(sticky = 'nsew')
 		
-		# self.img = ImageTk.PhotoImage(Image.open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'))
-		#self.img = ImageTk.PhotoImage(Image.open('pic.jpg'))
-		# self.pic_box = Canvas(self.frame4,background="black")
-		# # self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
-		# # self.pic_box.grid_columnconfigure(0,weight = 0)
-
-		# self.pic_box.grid(sticky='nsew')
-		# self.pic_box.config(image=self.img)		
-		
+		self.img_path = 'C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'		
 		
 		##initialise
 		self.ssh = paramiko.SSHClient()
@@ -116,8 +110,7 @@ class App:
 		self.pi_conn_ready = False
 		
 		self.video_ready = False		
-		self.ssh_ready = False	
-		
+		self.ssh_ready = False		
 		
 		self.console_thread = threading.Thread(target=self.write_to_console,args=())
 		self.console_thread.daemon = True
@@ -134,8 +127,10 @@ class App:
 		self.conn_thread = threading.Thread(target=self.conn_ready,args=())
 		self.conn_thread.daemon = True
 		self.conn_thread.start()	
-			
-		self.image_update()
+		
+		self.img_thread = threading.Thread(target=self.image_update,args=())
+		self.img_thread.daemon = True
+		self.img_thread.start()		
 	
 	def conn_ready(self):			
 		while True:	
@@ -163,10 +158,27 @@ class App:
 		self.master.after(1000, self.video_feed_initialiser)	
 	
 	def image_update(self):
-		print("image function working")
-		imagetk = ImageTk.PhotoImage(Image.open('pic.jpg'))
-		self.image_frame.config(image=imagetk)
-		self.master.after(2000, self.image_update)
+		self.raw_img = Image.open(self.img_path)		
+		self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
+		#self.raw_img = self.raw_img.resize((100,100), Image.ANTIALIAS)
+		
+		self.img = ImageTk.PhotoImage(self.raw_img)
+		#self.img = Image.open('pic.jpg')
+		# self.image_frame.winfo_width(),self.image_frame.winfo_height()
+		#self.img = ImageTk.Image.open('pic.jpg')	
+		
+		# self.img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()),Image.ANTIALIAS)
+		#self.img = self.raw_img.resize((250, 250), Image.ANTIALIAS)
+		self.image_frame.config(image=self.img)
+		
+		# self.pic_box = Canvas(self.frame4,background="black")
+		# # self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
+		# # self.pic_box.grid_columnconfigure(0,weight = 0)
+
+		# self.pic_box.grid(sticky='nsew')
+		# self.pic_box.config(image=self.img)	
+		
+		self.master.after(1000, self.image_update)
 		
 	def video_feed(self):		
 		if self.video_ready:					
@@ -214,18 +226,16 @@ class App:
 		except:
 			self.console_file_exists = False	
 		if self.console_file_exists:							
-			if modifiedtime != self.console_modified_time:	
-
-				#file = self.ftp_client.open(self.console_file_path)
-				console_list = []								
+			if modifiedtime != self.console_modified_time:
+				self.console_list = []##need to change this to check line number difference and only bring new lines						
 				for line in	self.console_fhandle:					
-					console_list.append(line)
+					self.console_list.append(line)
 	
 				self.textArea.config(state=NORMAL)
 				self.textArea.delete('1.0', END)
 				self.textArea.config(state=DISABLED)
 				
-				for item in console_list:
+				for item in self.console_list:
 					self.textArea.config(state=NORMAL)					
 					self.textArea.insert(END,item)
 					self.textArea.config(state=DISABLED)
@@ -246,9 +256,7 @@ class App:
 					self.console_file_exists = True
 			except:
 				pass
-		self.master.after(1000, self.write_to_console)		
-
-	
+		self.master.after(1000, self.write_to_console)	
 	
 #resolution - height,width	
 res = (400,600)
