@@ -88,7 +88,8 @@ class App:
 		self.console_file_exists = False
 		self.console_modified_time = 0
 		self.console_file_path = '/home/pi/console.txt'
-		#self.console_file_path = 'C://Users//paultobias//Desktop//console.txt'			
+		#self.console_file_path = 'C://Users//paultobias//Desktop//console.txt'
+		#Check remote console file exists		
 		
 		#Frame 4 image of map
 		self.frame4 = Frame(self.master, background="black")
@@ -99,8 +100,7 @@ class App:
 		self.image_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
 		self.image_frame.grid(sticky = 'nsew')
 		
-		self.img_path = 'C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'	
-		self.img_modified_time = 0
+		self.img_path = 'C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'		
 		
 		##initialise
 		self.ssh = paramiko.SSHClient()
@@ -158,16 +158,27 @@ class App:
 		self.master.after(1000, self.video_feed_initialiser)	
 	
 	def image_update(self):
-		modified_time = os.path.getmtime(self.img_path)
-		if modified_time != self.img_modified_time:
-			self.raw_img = Image.open(self.img_path)	
-			self.img_modified_time = modified_time		
-		if self.raw_img.width != self.image_frame.winfo_width():
-			self.raw_img = Image.open(self.img_path)	
-			self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
-			self.img = ImageTk.PhotoImage(self.raw_img)		
-			self.image_frame.config(image=self.img)		
-		self.master.after(50, self.image_update)
+		self.raw_img = Image.open(self.img_path)		
+		self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
+		#self.raw_img = self.raw_img.resize((100,100), Image.ANTIALIAS)
+		
+		self.img = ImageTk.PhotoImage(self.raw_img)
+		#self.img = Image.open('pic.jpg')
+		# self.image_frame.winfo_width(),self.image_frame.winfo_height()
+		#self.img = ImageTk.Image.open('pic.jpg')	
+		
+		# self.img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()),Image.ANTIALIAS)
+		#self.img = self.raw_img.resize((250, 250), Image.ANTIALIAS)
+		self.image_frame.config(image=self.img)
+		
+		# self.pic_box = Canvas(self.frame4,background="black")
+		# # self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
+		# # self.pic_box.grid_columnconfigure(0,weight = 0)
+
+		# self.pic_box.grid(sticky='nsew')
+		# self.pic_box.config(image=self.img)	
+		
+		self.master.after(1000, self.image_update)
 		
 	def video_feed(self):		
 		if self.video_ready:					
