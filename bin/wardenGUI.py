@@ -1,23 +1,26 @@
+from platform import system as system_name  
+from subprocess import call as system_call 
 import paramiko
-from tkinter import *
-from tkinter import ttk
+from tkinter import *#, ttk from tkinter import ttk
 import os
+import time
 import datetime
 import threading
+from threading import Thread
+import socket
+import subprocess
 
 #Video related
 import numpy as np
 import cv2 as cv
 from PIL import Image, ImageTk	
-from imutils.video import FPS
-from imutils.video import WebcamVideoStream
-from imutils.video import FileVideoStream
-import imutils
+from imutils.video import FPS, WebcamVideoStream, FileVideoStream
+import imutils		
 
 class App:
-	def __init__(self,master,res):			
+	def __init__(self,master,res):		
 		#Sets the icon and titlebar text (Quite unnecessary but looks better)
-		root.iconbitmap('c:\Python34\DLLs\py.ico')		
+		master.iconbitmap('c:\Python34\DLLs\py.ico')		
 		
 		#Pass the parameter master to variable self.master
 		self.master = master		
@@ -30,11 +33,12 @@ class App:
 		
 		#set the titlebar text
 		self.master.title("WARDEN GUI")			
-		
+
 		##Set the video source
 		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
-		self.vs = WebcamVideoStream(src="rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()
-		
+		#self.vs = WebcamVideoStream(src="rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()
+		#self.vs = WebcamVideoStream('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')		
+
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
 		self.master.grid_rowconfigure(1, weight=1)
@@ -59,23 +63,10 @@ class App:
 		#bind double mouse click to the image_box
 		self.video_frame.bind('<Double-Button>', self.event_handler)
 		
-		#Frame 2 JPEG?
+		#Frame 2 buttons
 		self.frame2 = Frame(self.master, background="black")
 		self.frame2.grid(column = 1, row = 0, sticky='nsew')	
-		self.frame2.grid_rowconfigure(0,weight = 0)
-		self.frame2.grid_columnconfigure(0,weight = 0)			
-		
-		self.image_frame = Label(self.frame2,width=self.frame2.winfo_width(),height=self.frame2.winfo_height(),background="black")
-		self.image_frame.grid(sticky = 'nsew')
-		
-		# self.img = ImageTk.PhotoImage(Image.open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'))
-		#self.img = ImageTk.PhotoImage(Image.open('pic.jpg'))
-		# self.pic_box = Canvas(self.frame2,background="black")
-		# # self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
-		# # self.pic_box.grid_columnconfigure(0,weight = 0)
 
-		# self.pic_box.grid(sticky='nsew')
-		# self.pic_box.config(image=self.img)		
 		
 		#frame 3 contains the TEXT BOX
 		self.frame3 = Frame(self.master, background="black")
@@ -93,55 +84,113 @@ class App:
 		# self.textArea.config(yscrollcommand=self.scroll.set) 	
 		# self.scroll.config(command=self.textArea.yview)			
 		
-		self.console_fhandle = False				
+		self.console_fhandle = False	
+		self.console_file_exists = False
 		self.console_modified_time = 0
 		self.console_file_path = '/home/pi/console.txt'
-		#Check remote console file exists
-		self.console_file_exists = False
+		#self.console_file_path = 'C://Users//paultobias//Desktop//console.txt'
+		#Check remote console file exists		
 		
-		#Frame 4 spare for later use
+		#Frame 4 image of map
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')	
 		
+		self.image_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
+		self.image_frame.grid(sticky = 'nsew')
+		
+		# self.img = ImageTk.PhotoImage(Image.open('C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'))
+		#self.img = ImageTk.PhotoImage(Image.open('pic.jpg'))
+		# self.pic_box = Canvas(self.frame4,background="black")
+		# # self.pic_box.gridCanvas_rowconfigure(0,weight = 0)
+		# # self.pic_box.grid_columnconfigure(0,weight = 0)
+
+		# self.pic_box.grid(sticky='nsew')
+		# self.pic_box.config(image=self.img)		
+		
+		
+		##initialise
 		self.ssh = paramiko.SSHClient()
 		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-			
 		
+		self.video_conn_ready = False
+		self.pi_conn_ready = False
+		
+		self.video_ready = False		
+		self.ssh_ready = False	
+		
+		
+		self.console_thread = threading.Thread(target=self.write_to_console,args=())
+		self.console_thread.daemon = True
+		self.console_thread.start()
+		
+		self.video_feed_thread = Thread(target=self.video_feed,args=())
+		self.video_feed_thread.daemon = True
+		self.video_feed_thread.start()	
+		
+		self.video_feed_init_thread = Thread(target=self.video_feed_initialiser,args=())
+		self.video_feed_init_thread.daemon = True
+		self.video_feed_init_thread.start()
+		
+		self.conn_thread = threading.Thread(target=self.conn_ready,args=())
+		self.conn_thread.daemon = True
+		self.conn_thread.start()	
+			
+		self.image_update()
+	
+	def conn_ready(self):			
+		while True:	
+			pi = os.system("ping -n 1 " + '192.168.1.176')
+			video = os.system("ping -n 1 " + '192.168.1.10')
+			
+			if pi == 0:
+				self.pi_conn_ready = True
+			else:
+				self.pi_conn_ready = False	
+				self.ssh_ready = False				
+			if video == 0:
+				self.video_conn_ready = True
+			else:
+				self.video_conn_ready = False
+				self.video_ready = False				
+			time.sleep(3)
+			
+	def video_feed_initialiser(self):
+		if not self.video_ready:
+			if self.video_conn_ready:			
+				self.vs = WebcamVideoStream(src="rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()		
+				if str(self.vs.read()) != 'None'	:			
+					self.video_ready = True					
+		self.master.after(1000, self.video_feed_initialiser)	
+	
 	def image_update(self):
+		print("image function working")
 		imagetk = ImageTk.PhotoImage(Image.open('pic.jpg'))
 		self.image_frame.config(image=imagetk)
 		self.master.after(2000, self.image_update)
 		
 	def video_feed(self):		
-		frame = self.vs.read()	#read the next frame 
+		if self.video_ready:					
+			frame = self.vs.read()	#read the next frame			
+			##resize the image
+			if self.video_frame.winfo_width()>1:	
+				if self.video_frame.winfo_height() < int((self.video_frame.winfo_width()*0.5625)): 
+					frame = imutils.resize(frame 
+						,width=int(self.video_frame.winfo_height()*1.77777) #image width
+						,height=self.video_frame.winfo_height()#image height
+						) 				
+				else:
+					frame = imutils.resize(frame
+						,width=self.video_frame.winfo_width()	#image width
+						,height=int((self.video_frame.winfo_width()*0.5625))
+						)	#image height					
+			##process the raw frame
+			cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)	#colours picture correctly		
+			current_image = Image.fromarray(cvimage)	#Something to do with PIL, processes the matrix array			
+			imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
+			self.video_frame.imgtk = imagetk  # stops garbage collection		
+			self.video_frame.config(image=imagetk)  # show the image in image_box	
+		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds
 		
-		##resize the image if self.video_frame has changed size
-		if self.video_frame.winfo_width()>1:	
-			if self.video_frame.winfo_height() < int((self.video_frame.winfo_width()*0.5625)): 
-				frame = imutils.resize(frame 
-					,width=int(self.video_frame.winfo_height()*1.77777) #image width
-					,height=self.video_frame.winfo_height()#image height
-					) 				
-				self.video_frame_previous_size = [
-					int(self.video_frame.winfo_height()*1.77777)#set new value for 'previous' width
-					,self.video_frame.winfo_height()#set new value for 'previous' height
-					]
-			else:
-				frame = imutils.resize(frame
-					,width=self.video_frame.winfo_width()	#image width
-					,height=int((self.video_frame.winfo_width()*0.5625)))	#image height
-				self.video_frame_previous_size = [
-					self.video_frame.winfo_width()#set new value for 'previous' width	
-					,int((self.video_frame.winfo_width()*0.5625))#set new value for 'previous' height
-					]			
-		##process the raw frame
-		cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)	#colours picture correctly		
-		current_image = Image.fromarray(cvimage)	#Something to do with PIL, processes the matrix array			
-		imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
-		self.video_frame.imgtk = imagetk  # stops garbage collection		
-		self.video_frame.config(image=imagetk)  # show the image in image_box			
-		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds		
-	
 	def event_handler(self,event=None):		
 		if event.char == 'f' or event.keysym == 'Escape' or event.num == 1:
 			self.fullscreen(event)	
@@ -156,24 +205,22 @@ class App:
 				self.fullscreen_status = True			
 			else:
 				self.frame1.grid(columnspan = 1,rowspan=1)
-				self.fullscreen_status = False		
+				self.fullscreen_status = False
 				
-	def write_to_console(self):
-		#Check if the file exists
+	def write_to_console(self):		
 		try:
-			self.console_file_exists = self.ftp_client.stat(self.console_file_path)
+			self.console_fhandle = self.ftp_client.open(self.console_file_path)
+			modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime		
 		except:
-			self.console_file_exists = False			
-			
-		#check if the file and file handle exists
-		if self.console_file_exists:						
-			modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime				
+			self.console_file_exists = False	
+		if self.console_file_exists:							
 			if modifiedtime != self.console_modified_time:	
-				file = self.ftp_client.open(self.console_file_path)
+
+				#file = self.ftp_client.open(self.console_file_path)
 				console_list = []								
-				for line in	file:					
+				for line in	self.console_fhandle:					
 					console_list.append(line)
-				print("got here")	
+	
 				self.textArea.config(state=NORMAL)
 				self.textArea.delete('1.0', END)
 				self.textArea.config(state=DISABLED)
@@ -184,22 +231,24 @@ class App:
 					self.textArea.config(state=DISABLED)
 					self.textArea.see("end")
 				self.console_modified_time = modifiedtime
-				file.close()
+				self.console_fhandle.close()
 		else:
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
 			self.textArea.insert(INSERT,"Waiting for console data")
 			self.textArea.config(state=DISABLED)
-			self.console_file_exists = False
-			try:					
-				self.ftp_client=self.ssh.open_sftp()
+			self.ssh_ready = False
+			try:
+				self.ssh.connect('192.168.1.176', username='pi', password='raspberry')	
+				self.ftp_client=self.ssh.open_sftp()		
 				self.console_fhandle = self.ftp_client.open(self.console_file_path)
-				self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
 				if self.console_fhandle:
 					self.console_file_exists = True
 			except:
 				pass
-		self.master.after(1000, self.write_to_console)
+		self.master.after(1000, self.write_to_console)		
+
+	
 	
 #resolution - height,width	
 res = (400,600)
@@ -208,13 +257,5 @@ if __name__ == '__main__':
 	#create tkinter root
 	root = Tk()
 	#create instance of app class
-	app = App(root,res)
-	
-	# #call the looping functions from the instance
-	app.video_feed()
-	#app.image_update()
-	app.write_to_console()
-	
-	#start tkinter mainloop
-	root.mainloop()	
-app.vs.stop()
+	app = App(root,res)	
+	root.mainloop()		
