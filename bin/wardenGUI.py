@@ -1,3 +1,4 @@
+import socket
 from platform import system as system_name  
 from subprocess import call as system_call 
 import paramiko
@@ -135,22 +136,31 @@ class App:
 		self.img_thread.start()			
 		
 		self.console_list = []
+		self.modifiedtime = 0
+		self.ssh_connect_in_progress = False
 	
 	def conn_ready(self):			
 		while True:	
-			pi = os.system("ping -n 1 " + '192.168.1.176')
-			video = os.system("ping -n 1 " + '192.168.1.10')			
-			if pi == 0:
+			#ssh = False
+			try:
+				video = str(subprocess.check_output("ping -n 1 192.168.1.10", shell=True))
+			except:
+			 video = ""
+			try:
+				pi = str(subprocess.check_output("ping -n 1 192.168.1.176", shell=True))	
+			except:
+				pi = ''			
+			if 'Reply from 192.168.1.176' in pi:			
 				self.pi_conn_ready = True
 			else:
 				self.pi_conn_ready = False	
 				self.ssh_ready = False				
-			if video == 0:
+			if 'Reply from 192.168.1.10' in video:
 				self.video_conn_ready = True
 			else:
 				self.video_conn_ready = False
-				self.video_ready = False				
-			time.sleep(5)
+				self.video_ready = False			
+			time.sleep(3)
 			
 	def video_feed_initialiser(self):
 		if not self.video_ready:
@@ -215,82 +225,105 @@ class App:
 				self.fullscreen_status = True			
 			else:
 				self.frame1.grid(columnspan = 1,rowspan=1)
-				self.fullscreen_status = False
-	
-	# def ssh_establish(self):		
-		# if self.ssh_ready == False and self.pi_conn_ready == True:			
-			# try:				
-				# self.ssh.connect('192.168.1.176', username='pi', password='raspberry')	
-				# self.ftp_client=self.ssh.open_sftp()
-				# self.ssh_ready = True		
-			# except:
-				# pass
-
-	def write_to_console(self):	
-		# print(self.ssh_ready, self.console_file_exists)
-		try:	
-			modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime	
-			# print (modifiedtime)
-		except:
-			self.console_file_exists = False
-			self.modified_time = 0
-			self.console_count = 0
-			self.console_list = []			
-			# try:
-				# self.ssh.exec_command('ls', timeout=5)				
-			# except:
-				# self.ssh_ready = False				
-		if self.console_file_exists:
-			# print("file exists")			
-			if modifiedtime != self.console_modified_time or len(self.console_list) <1:
-				# print("times are different")
-				#print(self.console_fhandle.readlines())
-				file_temp = self.console_fhandle.readlines()
-				# print(file_temp)
-				for item in file_temp:
-					# print(item)
-					self.console_list.append(item)
-				list_length = len(self.console_list)
-				while self.console_count < list_length-1:
-					self.textArea.config(state=NORMAL)		
-					self.textArea.insert(END,self.console_list[self.console_count])
-					self.textArea.config(state=DISABLED)
-					self.textArea.see("end")
-					self.console_count+=1
-				self.console_modified_time = modifiedtime			
-		else:
-			# try:			
-				# self.ssh.exec_command('ls', timeout=5)
-			# except:
-				# self.ssh_ready = False
+				self.fullscreen_status = False			
+			
+	def write_to_console(self):
+		if self.console_file_exists == False:
+			print("ssh ready? = ",self.ssh_ready)
+			print("File exsists marked as false, at the top")
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
 			self.textArea.insert(INSERT,"Waiting for console data")			
 			self.textArea.config(state=DISABLED)
-			
+			self.modifiedtime = 0
 			self.console_count = 0	
-			if self.ssh_ready == True:
-				if self.console_fhandle:
-					self.console_fhandle.close()
-				#self.console_fhandle = self.ftp_client.open(self.console_file_path)	
-				try:
-					self.console_fhandle = self.ftp_client.open(self.console_file_path)	
-					self.console_file_exists = True					
-					self.textArea.config(state=NORMAL)
-					self.textArea.delete('1.0', END)
-					self.textArea.config(state=DISABLED)
-				except:
-					self.console_file_exists = False					
-			else:
-				# self.ssh_establish()
-				if self.ssh_ready == False and self.pi_conn_ready == True:
-					# print("got here")
-					try:				
-						self.ssh.connect('192.168.1.176', username='pi', password='raspberry')	
-						self.ftp_client=self.ssh.open_sftp()
-						self.ssh_ready = True		
-					except:
+			self.console_list = []	
+			try:			
+				ssh = self.ssh.exec_command('ls', timeout=5)
+			except Exception as msg:
+				print (msg)
+			
+			if self.ssh_ready == False and self.pi_conn_ready == True:
+				print("pi is up but ssh down so calling the ssh connect line 242")
+				if self.ssh_connect_in_progress != True:
+					print("ssh connect called")
+					try:	
+						self.ssh_connect_in_progress = True
+						self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
+						connect = True
+					except Exception as msg:
+						print (msg)
+						connect = False
 						pass
+					if connect == True:
+						try:
+							self.ftp_client=self.ssh.open_sftp()
+							self.ssh_ready = True	
+							self.ssh_connect_in_progress = False
+						except Exception as msg:
+							print (msg)			
+					else:			
+						self.ssh_ready = False
+						self.ssh_connect_in_progress = False						
+					
+			if self.ssh_ready == True and self.console_file_exists == False:
+				print("ssh ready and file doesnt exist")
+				#try:
+				print("should be attempting to open the file again")
+				#self.console_fhandle = self.ftp_client.open(self.console_file_path)
+				try:						
+					self.console_fhandle = self.ftp_client.open(self.console_file_path)
+					self.console_file_exists = True
+					print ("1")
+				except:
+					print("could not open handle")
+					
+				if self.console_file_exists == True:
+					try:
+						print("small issue")
+						# self.console_file_exists = True	
+						print ("2")						
+						self.textArea.config(state=NORMAL)
+						print ("3")
+						self.textArea.delete('1.0', END)
+						print ("4")
+						self.textArea.config(state=DISABLED)	
+						print ("5")
+						try:
+							modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime	
+						except:
+							modifiedtime = False
+						print ("6")
+						self.console_file_exists = True
+						print("marked as true here and ssh_ready =",self.ssh_ready)
+					except:
+						print("did we seriously get here?")
+						self.console_file_exists = False	
+		
+		##################################################################################		
+		if self.console_file_exists:
+			try:
+				modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime
+			except:
+				print ("did it fuckingreach the modified time failed or no?")
+				modifiedtime = False
+			if modifiedtime:
+				if modifiedtime != self.console_modified_time or len(self.console_list) <1:				
+					file_temp = self.console_fhandle.readlines()		
+					for item in file_temp:
+						# print(item)
+						self.console_list.append(item)
+					list_length = len(self.console_list)
+					while self.console_count < list_length-1:
+						self.textArea.config(state=NORMAL)		
+						self.textArea.insert(END,self.console_list[self.console_count])
+						self.textArea.config(state=DISABLED)
+						self.textArea.see("end")
+						self.console_count+=1
+					self.console_modified_time = modifiedtime
+			else:
+				print("got to the bottom 'console file doesnt exist'")
+				self.console_file_exists = False
 		self.master.after(1000, self.write_to_console)		
 		
 #Opening resolution - height,width	
