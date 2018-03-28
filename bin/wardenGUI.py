@@ -19,12 +19,12 @@ from imutils.video import FPS, WebcamVideoStream, FileVideoStream
 import imutils		
 
 class App:
-	def __init__(self,master,res):		
-		#Sets the icon and titlebar text (Quite unnecessary but looks better)
-		master.iconbitmap('c:\Python34\DLLs\py.ico')		
-		
+	def __init__(self,master,res):			
 		#Pass the parameter master to variable self.master
-		self.master = master		
+		self.master = master
+
+		#Sets the icon and titlebar text (Quite unnecessary but looks better)		
+		self.master.iconbitmap('warden.ico')			
 		
 		#key binding definition for f key to fullscreen function
 		self.master.bind('<Key>', self.event_handler)
@@ -33,12 +33,7 @@ class App:
 		self.fullscreen_status = False		
 		
 		#set the titlebar text
-		self.master.title("WARDEN GUI")			
-
-		##Set the video source
-		#self.vs = cv.VideoCapture("rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream")
-		#self.vs = WebcamVideoStream(src="rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()
-		#self.vs = WebcamVideoStream('C:\\Users\\paultobias\\Downloads\\MOV_1114.mp4')		
+		self.master.title("WARDEN GUI")	
 
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
@@ -61,15 +56,24 @@ class App:
 		self.video_frame = Label(self.frame1,width=self.frame1.winfo_width(),height=self.frame1.winfo_height(),background="black")
 		self.video_frame.grid(sticky='nsew')
 		
-		#bind double mouse click to the image_box
+		#bind double mouse click to the video frame
 		self.video_frame.bind('<Double-Button>', self.event_handler)
+		self.vid_dis_img_path = 'vid_disconnect.jpg'
 		
 		#Frame 2 buttons
 		self.frame2 = Frame(self.master, background="black")
-		self.frame2.grid(column = 1, row = 0, sticky='nsew')	
-
+		self.frame2.grid(column = 1, row = 0, sticky='nsew')
+		self.frame2.grid_rowconfigure(0,weight = 1)
+		self.frame2.grid_columnconfigure(0,weight = 1)		
+		# self.button_frame = Label(self.frame2,width=self.frame2.winfo_width(),height=self.frame2.winfo_height(),background="black")
+		# self.button_frame.grid(sticky = 'nsew')
 		
-		#frame 3 contains the TEXT BOX
+		# self.ward_rawimg = Image.open('warden_text.png')	
+		# self.ward_rawimg = self.ward_rawimg.resize((self.frame2.winfo_width(),self.frame2.winfo_height()), Image.ANTIALIAS)
+		# self.ward_img = ImageTk.PhotoImage(self.ward_rawimg)		
+		# self.button_frame.config(image=self.ward_img)	
+		
+		#frame 3 contains the CONSOLE
 		self.frame3 = Frame(self.master, background="black")
 		self.frame3.grid(column = 0, row = 1, sticky='nsew')	
 		self.frame3.grid_rowconfigure(0,weight = 1)
@@ -79,6 +83,7 @@ class App:
 		self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)		
 		self.textArea.grid(sticky='nsew')
 	
+		#Scrollbar (not working)
 		#self.scroll=Scrollbar(self.textArea, orient = VERTICAL)
 		# self.scroll=Scrollbar(self.textArea)
 		# self.scroll.grid(column=1, row=0, sticky='nsew')
@@ -88,11 +93,11 @@ class App:
 		self.console_fhandle = False	
 		self.console_file_exists = False
 		self.console_modified_time = 0
-		self.console_count = 0
+		# self.console_count = 0
 		self.console_file_path = '/home/pi/console.txt'
-		#self.console_file_path = 'C://Users//paultobias//Desktop//console.txt'			
+		#self.console_file_path = 'console.txt'			
 		
-		#Frame 4 image of map
+		#Frame 4 MAP
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')	
 		self.frame4.grid_rowconfigure(0,weight = 1)
@@ -101,36 +106,43 @@ class App:
 		self.image_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
 		self.image_frame.grid(sticky = 'nsew')
 		
-		self.img_path = 'C:\\Users\\paultobias\\Documents\\GitHub\\Secbot\\bin\\pic.jpg'	
+		self.img_path = 'cluedo.jpg'	
 		self.img_modified_time = 0
 		
-		#ssh settings
+		#SSH settings
 		self.ssh = paramiko.SSHClient()
-		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())		
 		
-		
+		#Set variables to check connections
 		self.video_conn_ready = False
 		self.pi_conn_ready = False
 		
 		self.video_ready = False		
 		self.ssh_ready = False		
 		
+		#Start threads:-
+		
+		#Console thread
 		self.console_thread = threading.Thread(target=self.write_to_console,args=())
 		self.console_thread.daemon = True
 		self.console_thread.start()
 		
+		#Video feed thread
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
 		self.video_feed_thread.daemon = True
 		self.video_feed_thread.start()		
 		
+		#Video feed initialiser thread
 		self.video_feed_init_thread = Thread(target=self.video_feed_initialiser,args=())
 		self.video_feed_init_thread.daemon = True
 		self.video_feed_init_thread.start()
 		
+		#Connections ready thread
 		self.conn_thread = threading.Thread(target=self.conn_ready,args=())
 		self.conn_thread.daemon = True
 		self.conn_thread.start()	
 		
+		#Update the map thread
 		self.img_thread = threading.Thread(target=self.image_update,args=())
 		self.img_thread.daemon = True
 		self.img_thread.start()			
@@ -141,16 +153,15 @@ class App:
 	
 	def conn_ready(self):			
 		while True:	
-			#ssh = False
 			try:
 				video = str(subprocess.check_output("ping -n 1 192.168.1.10", shell=True))
 			except:
-			 video = ""
+				video = ""
 			try:
-				pi = str(subprocess.check_output("ping -n 1 192.168.1.176", shell=True))	
+				pi = str(subprocess.check_output("ping -n 1 192.168.1.2", shell=True))	
 			except:
 				pi = ''			
-			if 'Reply from 192.168.1.176' in pi:			
+			if 'Reply from 192.168.1.2' in pi:			
 				self.pi_conn_ready = True
 			else:
 				self.pi_conn_ready = False	
@@ -179,7 +190,7 @@ class App:
 			self.raw_img = Image.open(self.img_path)	
 			self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
 			self.img = ImageTk.PhotoImage(self.raw_img)		
-			self.image_frame.config(image=self.img)		
+			self.image_frame.config(image=self.img)				
 		self.master.after(50, self.image_update)
 		
 	def video_feed(self):		
@@ -204,11 +215,12 @@ class App:
 			self.video_frame.imgtk = imagetk  # stops garbage collection		
 			self.video_frame.config(image=imagetk)  # show the image in image_box
 			
-		else:
-			try:
-				self.video_frame.config(image=self.img)
-			except:
-				pass
+		else:								
+			self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
+			if self.vid_dis_raw_img.width != self.image_frame.winfo_width():
+				self.vid_dis_raw_img = self.vid_dis_raw_img.resize((self.video_frame.winfo_width(),self.video_frame.winfo_height()), Image.ANTIALIAS)
+			self.vid_dis_img = ImageTk.PhotoImage(self.vid_dis_raw_img)			
+			self.video_frame.config(image=self.vid_dis_img)			
 		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds
 		
 	def event_handler(self,event=None):		
@@ -229,8 +241,8 @@ class App:
 			
 	def write_to_console(self):
 		if self.console_file_exists == False:
-			print("ssh ready? = ",self.ssh_ready)
-			print("File exsists marked as false, at the top")
+			# print("ssh ready? = ",self.ssh_ready)
+			# print("File exsists marked as false, at the top")
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
 			self.textArea.insert(INSERT,"Waiting for console data")			
@@ -241,77 +253,63 @@ class App:
 			try:			
 				ssh = self.ssh.exec_command('ls', timeout=5)
 			except Exception as msg:
-				print (msg)
-			
-			if self.ssh_ready == False and self.pi_conn_ready == True:
-				print("pi is up but ssh down so calling the ssh connect line 242")
+				#print (msg)
+				pass
+			if self.ssh_ready == False and self.pi_conn_ready == True:				
 				if self.ssh_connect_in_progress != True:
-					print("ssh connect called")
+					#print("ssh connect called")
 					try:	
 						self.ssh_connect_in_progress = True
-						self.ssh.connect('192.168.1.176', username='pi', password='raspberry')
+						self.ssh.connect('192.168.1.2', username='pi', password='vadelma77')
 						connect = True
-					except Exception as msg:
+					except (AuthenticationException, BadHostKeyException, Exception, socket.error, SSHException) as msg:
 						print (msg)
+						#pass
 						connect = False
-						pass
+						
 					if connect == True:
 						try:
 							self.ftp_client=self.ssh.open_sftp()
 							self.ssh_ready = True	
 							self.ssh_connect_in_progress = False
 						except Exception as msg:
-							print (msg)			
+							# print (msg)
+							pass
 					else:			
 						self.ssh_ready = False
 						self.ssh_connect_in_progress = False						
-					
+	
 			if self.ssh_ready == True and self.console_file_exists == False:
-				print("ssh ready and file doesnt exist")
-				#try:
-				print("should be attempting to open the file again")
-				#self.console_fhandle = self.ftp_client.open(self.console_file_path)
+				#print("ssh ready and file doesnt exist")
+				#print("should be attempting to open the file again")				
 				try:						
 					self.console_fhandle = self.ftp_client.open(self.console_file_path)
 					self.console_file_exists = True
-					print ("1")
-				except:
-					print("could not open handle")
+					#print ("1")
+				except Exception as msg:
+					# print(msg)
+					pass
 					
-				if self.console_file_exists == True:
+				if self.console_file_exists == True:											
+					self.textArea.config(state=NORMAL)	
+					self.textArea.delete('1.0', END)
+					self.textArea.config(state=DISABLED)
 					try:
-						print("small issue")
-						# self.console_file_exists = True	
-						print ("2")						
-						self.textArea.config(state=NORMAL)
-						print ("3")
-						self.textArea.delete('1.0', END)
-						print ("4")
-						self.textArea.config(state=DISABLED)	
-						print ("5")
-						try:
-							modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime	
-						except:
-							modifiedtime = False
-						print ("6")
-						self.console_file_exists = True
-						print("marked as true here and ssh_ready =",self.ssh_ready)
-					except:
-						print("did we seriously get here?")
-						self.console_file_exists = False	
+						modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime						
+					except Exception as msg:
+						modifiedtime = False
+						self.console_file_exists = False
 		
 		##################################################################################		
 		if self.console_file_exists:
 			try:
 				modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime
 			except:
-				print ("did it fuckingreach the modified time failed or no?")
 				modifiedtime = False
 			if modifiedtime:
 				if modifiedtime != self.console_modified_time or len(self.console_list) <1:				
 					file_temp = self.console_fhandle.readlines()		
 					for item in file_temp:
-						# print(item)
 						self.console_list.append(item)
 					list_length = len(self.console_list)
 					while self.console_count < list_length-1:
@@ -322,7 +320,7 @@ class App:
 						self.console_count+=1
 					self.console_modified_time = modifiedtime
 			else:
-				print("got to the bottom 'console file doesnt exist'")
+				#print("console file doesnt exist line 330")
 				self.console_file_exists = False
 		self.master.after(1000, self.write_to_console)		
 		
