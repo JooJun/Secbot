@@ -149,7 +149,8 @@ class App:
 		
 		self.console_list = []
 		self.modifiedtime = 0
-		self.ssh_connect_in_progress = False
+		
+		self.authProblem = False
 	
 	def conn_ready(self):			
 		while True:	
@@ -159,25 +160,32 @@ class App:
 				video = ""
 			try:
 				pi = str(subprocess.check_output("ping -n 1 192.168.1.2", shell=True))	
+				#pi = str(subprocess.check_output("ping -n 1 192.168.1.176", shell=True))
 			except:
 				pi = ''			
-			if 'Reply from 192.168.1.2' in pi:			
+			if 'Reply from 192.168.1.2' in pi:	
+			#if 'Reply from 192.168.1.176' in pi:	
 				self.pi_conn_ready = True
 			else:
 				self.pi_conn_ready = False	
 				self.ssh_ready = False				
 			if 'Reply from 192.168.1.10' in video:
+				#print("ping has been received: ",video)
 				self.video_conn_ready = True
 			else:
+				#print("ping failed, setting video connection and video ready to false")
 				self.video_conn_ready = False
 				self.video_ready = False			
 			time.sleep(3)
 			
 	def video_feed_initialiser(self):
 		if not self.video_ready:
-			if self.video_conn_ready:			
+			#print("video feed initilaiser has recognised that self.video_ready is false")
+			if self.video_conn_ready:
+				#print("attempting to reconnect the video connection")
 				self.vs = WebcamVideoStream(src="rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()		
-				if str(self.vs.read()) != 'None'	:			
+				if str(self.vs.read()) != 'None':	
+					#print("setting video_ready to true (self.vs is not none)")
 					self.video_ready = True					
 		self.master.after(1000, self.video_feed_initialiser)	
 	
@@ -194,28 +202,32 @@ class App:
 		self.master.after(50, self.image_update)
 		
 	def video_feed(self):		
-		if self.video_ready:					
-			frame = self.vs.read()	#read the next frame			
-			##resize the image
-			if self.video_frame.winfo_width()>1:	
-				if self.video_frame.winfo_height() < int((self.video_frame.winfo_width()*0.5625)): 
-					frame = imutils.resize(frame 
-						,width=int(self.video_frame.winfo_height()*1.77777) #image width
-						,height=self.video_frame.winfo_height()#image height
-						) 				
-				else:
-					frame = imutils.resize(frame
-						,width=self.video_frame.winfo_width()	#image width
-						,height=int((self.video_frame.winfo_width()*0.5625))
-						)	#image height					
-			##process the raw frame
-			cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)	#colours picture correctly		
-			current_image = Image.fromarray(cvimage)	#Something to do with PIL, processes the matrix array			
-			imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
-			self.video_frame.imgtk = imagetk  # stops garbage collection		
-			self.video_frame.config(image=imagetk)  # show the image in image_box
+		if self.video_ready:
+			try:
+				frame = self.vs.read()	#read the next frame			
+				##resize the image
+				if self.video_frame.winfo_width()>1:	
+					if self.video_frame.winfo_height() < int((self.video_frame.winfo_width()*0.5625)): 
+						frame = imutils.resize(frame 
+							,width=int(self.video_frame.winfo_height()*1.77777) #image width
+							,height=self.video_frame.winfo_height()#image height
+							) 				
+					else:
+						frame = imutils.resize(frame
+							,width=self.video_frame.winfo_width()	#image width
+							,height=int((self.video_frame.winfo_width()*0.5625))
+							)	#image height					
+				##process the raw frame
+				cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)	#colours picture correctly		
+				current_image = Image.fromarray(cvimage)	#Something to do with PIL, processes the matrix array			
+				imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
+				self.video_frame.imgtk = imagetk  # stops garbage collection		
+				self.video_frame.config(image=imagetk)  # show the image in image_box
+			except:
+				pass
 			
-		else:								
+		else:	
+			#print("should be setting video window to the video not there image")
 			self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
 			if self.vid_dis_raw_img.width != self.image_frame.winfo_width():
 				self.vid_dis_raw_img = self.vid_dis_raw_img.resize((self.video_frame.winfo_width(),self.video_frame.winfo_height()), Image.ANTIALIAS)
@@ -256,28 +268,30 @@ class App:
 				#print (msg)
 				pass
 			if self.ssh_ready == False and self.pi_conn_ready == True:				
-				if self.ssh_connect_in_progress != True:
+				if self.authProblem != True:
 					#print("ssh connect called")
-					try:	
-						self.ssh_connect_in_progress = True
+					try:
 						self.ssh.connect('192.168.1.2', username='pi', password='vadelma77')
-						connect = True
-					except (AuthenticationException, BadHostKeyException, Exception, socket.error, SSHException) as msg:
+						connected = True
+					except (paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
+					#except (paramiko.SSHException, socket.error) as msg:
 						print (msg)
+						if str(msg) == 'Authentication failed.':
+							self.authProblem = True
+						self.ssh.close()
 						#pass
-						connect = False
+						connected = False						
 						
-					if connect == True:
+					if connected == True:
 						try:
 							self.ftp_client=self.ssh.open_sftp()
 							self.ssh_ready = True	
-							self.ssh_connect_in_progress = False
-						except Exception as msg:
+
+						except (paramiko.ssh_exception, socket.error) as msg:
 							# print (msg)
 							pass
 					else:			
-						self.ssh_ready = False
-						self.ssh_connect_in_progress = False						
+						self.ssh_ready = False						
 	
 			if self.ssh_ready == True and self.console_file_exists == False:
 				#print("ssh ready and file doesnt exist")
