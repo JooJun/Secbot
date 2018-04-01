@@ -2,7 +2,7 @@
 
 bin/sixpair
 
-lib/dual-mc33926-motor-driver-rpi
+lib/
 
 src/sixpair.c
 
