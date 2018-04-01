@@ -2,6 +2,8 @@
 
 bin/sixpair
 
+fcrn/depthmaps/
+
 lib/
 
 src/sixpair.c
