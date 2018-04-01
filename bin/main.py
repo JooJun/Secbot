@@ -3,7 +3,9 @@ from fcntl import ioctl
 from dual_mc33926_rpi import motors, MAX_SPEED
 import subprocess
 import time
+import datetime
 count = 0
+console_path = '/home/pi/console.txt'
 
 # Create dictionary to store the axis states
 axis_states = {}
@@ -71,10 +73,22 @@ try:
 
 	# Main event loop
 	while True:
+		console = open(console_path,'a')
+		current_time = str(datetime.datetime.now())[:19]
+		console.write(current_time +": "+ line)
+		console.close()
+		while not jsdev:
+			try:
+				fn = '/dev/input/js0'
+				jsdev = open(fn, 'rb')	
+				count=0
+			except:
+				pass
 		evbuf = jsdev.read(8)
 		if evbuf:
 			time, value, type, number = struct.unpack('IhBB', evbuf)
 			if number == 16 and value ==1:
+				print ("number 16 was pressed")
 				bluetooth = subprocess.Popen(["bluetoothctl"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
 				bluetooth.stdin.write(b"disconnect 00:1B:FB:21:14:98")
 				bluetooth.stdin.flush()
@@ -83,13 +97,7 @@ try:
 				#print(output,errors)
 				#print("ps logo pressed",value)	
 				jsdev = False
-				while not jsdev:
-					try:
-						fn = '/dev/input/js0'
-						jsdev = open(fn, 'rb')	
-						count=0
-					except:
-						pass	
+
 			if type:				
 				#print (type, value, number)
 				axis = axis_map[number]
