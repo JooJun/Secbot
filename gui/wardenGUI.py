@@ -339,7 +339,7 @@ class App:
 		self.master.after(1000, self.write_to_console)		
 		
 #Opening resolution - height,width	
-res = (400,600)
+res = (720,1280)
 
 if __name__ == '__main__':
 	#create tkinter root
