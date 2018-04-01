@@ -1,10 +1,6 @@
 # Git ignore list
 
-bin/sixpair
-
-fcrn/depthmaps/
+depthmaps/
 
 lib/
-
-src/sixpair.c
 
