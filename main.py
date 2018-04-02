@@ -3,6 +3,7 @@ import os, struct, array
 import subprocess
 import time
 import datetime
+from timeit import default_timer as timer
 
 # Motor imports
 #from dual_mc33926_rpi import motors, MAX_SPEED
@@ -22,13 +23,15 @@ import lib.fcrn.tensorflow.models as fcrn_model
 
 print('Starting tf')
 
+start = timer()
+
 # Tensorflow variables 
 width = 640
 height = 360
 channels = 3
 batch = 1
-#model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
-model_path = r'C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt'
+model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
+#model_path = r'C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt'
 
 # Initializing Tensorflow and run startups
 # Placeholder for input image
@@ -44,10 +47,16 @@ session = tf.Session()
 saver = tf.train.Saver()
 saver.restore(session, model_path)
 
+end = timer()
+print('Time taken -tf : {}'.format(end-start))
+
 # Warmup Tensorflow
 for x in range(1, 10):
+    start = timer()
     print('{0} run'.format(x))
     depthmap.depthmap_func(network, session, input_placeholder)
+    end = timer()
+    print('Time taken -cam : {}'.format(end-start))
 
 print('Done!')
 
