@@ -1,4 +1,4 @@
-from fcntl import ioctl
+#from fcntl import ioctl
 
 def controller_func():
     status = True
