@@ -1,5 +1,7 @@
 # Git ignore list
 
+bin/main.log
+
 depthmaps/
 
 lib/
