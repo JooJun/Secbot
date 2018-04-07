@@ -25,7 +25,6 @@ if os.path.exists('bin/main.log'):
     open('bin/main.log', 'w').close()
 
 # Setup program primitives
-status = True
 mode = 1
 logging.basicConfig(filename='bin/main.log', level=logging.DEBUG)
 
@@ -70,17 +69,17 @@ for x in range(1, 10):
 
 logging.info('Warming up... Done!')
 
-while status:
-
-    if mode == 0:
-        logging.info('Starting manual control...')
-        controller.controller_func()
+while mode:
 
     if mode == 1:
-        logging.info('Starting autonomous control...')
-        auto.autonomous_func()
+        logging.info('Starting manual control...')
+        mode = controller.controller_func(mode)
 
-    if !status:
+    if mode == 2:
+        logging.info('Starting autonomous control...')
+        mode = auto.autonomous_func(mode)
+
+    if !mode:
         break
 
 logging.info('Exiting program...')

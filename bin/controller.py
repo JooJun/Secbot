@@ -1,6 +1,6 @@
 #from fcntl import ioctl
 
-def controller_func():
+def controller_func(mode):
     status = True
     count = 0
     console_path = '/home/pi/console.txt'
@@ -26,6 +26,7 @@ def controller_func():
     }
 
     jsdev = False
+    
     while not jsdev:
         try:
             fn = '/dev/input/js0'
@@ -104,9 +105,8 @@ def controller_func():
                                 axis = axis_map[number]
                                 axis_states[axis] = int(value*ratio)	
                                 #print ("Left stick value {}, Right stick value {}".format(axis_states['leftstick'], axis_states['rightstick']))
-                            count+=1
-            motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])			
-
+                                motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])			
+                        count+=1
     #Stop the motors if there is an exception of user presses Ctrl-C to kill process
 
     finally:
