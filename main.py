@@ -81,7 +81,7 @@ while mode:
         logging.info('Starting autonomous control...')
         mode = auto.autonomous_func(mode)
 
-    if !mode:
+    if not mode:
         break
 
 logging.info('Exiting program...')
