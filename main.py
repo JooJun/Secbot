@@ -25,7 +25,7 @@ if os.path.exists('bin/main.log'):
     open('bin/main.log', 'w').close()
 
 # Setup program primitives
-mode = 1
+#mode = 1
 logging.basicConfig(filename='bin/main.log', level=logging.DEBUG)
 
 ########################################################################
@@ -35,12 +35,14 @@ logging.info('Warming up...')
 start = timer()
 
 # Tensorflow variables 
-width = 640
-height = 360
+#width = 640
+width = 384
+#height = 360
+height = 216
 channels = 3
 batch = 1
-#model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
-model_path = r'C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt'
+model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
+#model_path = r'C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt'
 
 # Initializing Tensorflow and run startups
 # Placeholder for input image
