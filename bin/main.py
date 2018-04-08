@@ -106,8 +106,9 @@ try:
 						axis = axis_map[number]
 						axis_states[axis] = int(value*ratio)	
 						#print ("Left stick value {}, Right stick value {}".format(axis_states['leftstick'], axis_states['rightstick']))
+						motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])			
 					count+=1
-		motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])			
+				
 
 #Stop the motors if there is an exception of user presses Ctrl-C to kill process
 
