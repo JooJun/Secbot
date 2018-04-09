@@ -13,6 +13,7 @@ import subprocess
 
 #Create config dictionary from file
 config = {}
+data_send = {}
 
 with open("config.txt") as config_file:
 	for line in config_file:		
@@ -73,14 +74,26 @@ class App:
 		
 		#bind double mouse click to the video frame
 		self.video_frame.bind('<Double-Button>', self.event_handler)
+		
+		#Picture to display when no video present
 		self.vid_dis_img_path = '{0}/vid_disconnect.jpg'.format(config['content_folder'])				
 		
 		#Frame 2 BUTTONS
-		self.frame2 = Frame(self.master, background="black")
-		self.frame2.grid(column = 1, row = 0, sticky='nsew')
+		self.frame2 = Frame(self.master, background="gray")
+		self.frame2.grid(column = 1, row = 0,sticky='nsew') 
 		self.frame2.grid_rowconfigure(0,weight = 1)
-		self.frame2.grid_columnconfigure(0,weight = 1)  
+		self.frame2.grid_columnconfigure(0,weight = 1)		
+			
+		self.switch = Button(self.frame2,width=40,height=100,command=self.switch_handler)		
+		self.button_img_raw = Image.open('{0}/button.png'.format(config['content_folder']))
+		self.button_img_raw = self.button_img_raw.resize((40,100),Image.ANTIALIAS)		
+		self.button_photo = ImageTk.PhotoImage(self.button_img_raw)			
+		self.switch.configure(image=self.button_photo)		
+		#self.switch.configure(command=self.button_handler('button'))
+
+		self.switch.grid(sticky='w')
 		
+		data_send['control_status'] = 'Manual'
 		
 		#frame 3 contains the CONSOLE
 		self.frame3 = Frame(self.master, background="black")
@@ -267,7 +280,8 @@ class App:
 				self.raw_img = Image.open(self.depthmap_img_local)        
 				self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
 				self.img = ImageTk.PhotoImage(self.raw_img)             
-				self.image_frame.config(image=self.img)                         
+				self.image_frame.config(image=self.img) 
+
 		self.master.after(1000, self.image_update)
 			
 	def video_feed(self):           
@@ -308,7 +322,29 @@ class App:
 		if event.char == 'f' or event.keysym == 'Escape' or event.num == 1:
 			self.fullscreen(event)  
 		if event.char == 'q':
-			pass                    
+			pass 	
+	
+	def switch_handler(self):		
+		if data_send['control_status'] == 'Manual':
+			data_send['control_status'] = 'Automatic'
+			if self.ssh_ready:
+				file = self.ftp_client.open(config['data_exchange_file'],'w')
+				file.close()
+				file.open()
+				file.seek(0)
+				file.truncate()
+				file.write(data_send)
+				file.close()
+		else:
+			data_send['control_status'] = 'Manual'
+			if self.ssh_ready:
+				file = self.ftp_client.open(config['data_exchange_file'],'w')
+				file.close()
+				file.open()
+				file.seek(0)
+				file.truncate()
+				file.write(data_send)
+				file.close()
 					
 	def fullscreen(self,event=None):
 		if event.char == 'f' or event.num == 1 or event.keysym == 'Escape':
