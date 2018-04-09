@@ -24,7 +24,7 @@ class App:
                 self.master = master
 
                 #Sets the icon and titlebar text (Quite unnecessary but looks better)           
-                self.master.iconbitmap('warden.ico')                    
+                self.master.iconbitmap('content/warden.ico')                    
                 
                 #key binding definition for f key to fullscreen function
                 self.master.bind('<Key>', self.event_handler)
@@ -58,7 +58,7 @@ class App:
                 
                 #bind double mouse click to the video frame
                 self.video_frame.bind('<Double-Button>', self.event_handler)
-                self.vid_dis_img_path = 'vid_disconnect.jpg'
+                self.vid_dis_img_path = 'content/vid_disconnect.jpg'
                 
                 #Frame 2 buttons
                 self.frame2 = Frame(self.master, background="black")
@@ -94,8 +94,8 @@ class App:
                 self.console_file_exists = False
                 self.console_modified_time = 0
                 #self.console_count = 0
-                self.console_file_path = '/home/pi/Devel/secbot/bin/main.log'
-                #self.console_file_path = r'C:\Coding\Secbot\bin\main.log' 
+                self.console_file_path = '/home/pi/Devel/secbot/files/main.log'
+                #self.console_file_path = r'C:\Coding\Secbot\files\main.log' 
 
                 #Frame 4 MAP
                 self.frame4 = Frame(self.master, background="black")
@@ -106,9 +106,11 @@ class App:
                 self.image_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
                 self.image_frame.grid(sticky = 'nsew')
                 
-                self.img_path = '/home/pi/Devel/secbot/depthmaps/depth.png'    
-                #self.img_path = r'C:\Coding\Secbot\depthmaps\depth.png'
+                self.img_path = '/home/pi/Devel/secbot/files/depth.png'    
+                #self.img_path = r'C:\Coding\Secbot\files\depth.png'
                 self.img_modified_time = 0
+                self.img_file_exists = False
+                self.img_get_path = 'content/depth/depth.png'
                 
                 #SSH settings
                 self.ssh = paramiko.SSHClient()
@@ -191,16 +193,82 @@ class App:
                 self.master.after(1000, self.video_feed_initialiser)    
          
         def image_update(self):
-                modified_time = os.path.getmtime(self.img_path)
-                if modified_time != self.img_modified_time:
-                        self.raw_img = Image.open(self.img_path)        
-                        self.img_modified_time = modified_time          
-                if self.raw_img.width != self.image_frame.winfo_width():
-                        self.raw_img = Image.open(self.img_path)        
+                if self.img_file_exists == False:
+                        # print("ssh ready? = ",self.ssh_ready)
+                        # print("File exsists marked as false, at the top")
+                        self.img_modified_time = 0
+                        try:                    
+                                ssh = self.ssh.exec_command('ls', timeout=5)
+                        except Exception as msg:
+                                #print (msg)
+                                pass
+                        if self.ssh_ready == False and self.pi_conn_ready == True:                              
+                                if self.authProblem != True:
+                                        #print("ssh connect called")
+                                        try:
+                                                self.ssh.connect('192.168.1.2', username='pi', password='vadelma77')
+                                                connected = True
+                                        except (paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
+                                        #except (paramiko.SSHException, socket.error) as msg:
+                                                print (msg)
+                                                if str(msg) == 'Authentication failed.':
+                                                        self.authProblem = True
+                                                self.ssh.close()
+                                                #pass
+                                                connected = False                                               
+                                                
+                                        if connected == True:
+                                                try:
+                                                        print('sftp')
+                                                        self.ftp_client=self.ssh.open_sftp()
+                                                        print('sftp open')
+                                                        self.ssh_ready = True   
+
+                                                except (paramiko.ssh_exception, socket.error) as msg:
+                                                        # print (msg)
+                                                        pass
+                                        else:                   
+                                                self.ssh_ready = False                                          
+        
+                        if self.ssh_ready == True and self.img_file_exists == False:
+                                #print("ssh ready and file doesnt exist")
+                                #print("should be attempting to open the file again")                           
+                                try:                                            
+                                        self.ftp_client.get(self.img_path, self.img_get_path)
+                                        self.img_file_exists = True
+                                        print ("1")
+                                except Exception as msg:
+                                        # print(msg)
+                                        pass
+                                        
+                                if self.img_file_exists == True: 
+                                        try:
+                                                self.img_modified_time = self.ftp_client.stat(self.img_path).st_mtime                                            
+                                        except Exception as msg:
+                                                self.img_modified_time = False
+                                                self.img_file_exists = False
+                if self.img_file_exists:
+                    self.raw_img = Image.open(self.img_get_path)
+                    try:
+                        modified_time = self.ftp_client.stat(self.img_path).st_mtime
+                        size_img = self.ftp_client.stat(self.img_path).st_size
+                        print(size_img)
+                    except:
+                        modified_time = False
+                    if modified_time != self.img_modified_time and size_img != 0:
+                        try:
+                            self.ftp_client.get(self.img_path, self.img_get_path)
+                            self.raw_img = Image.open(self.img_get_path)
+                            self.img_modified_time = modified_time 
+                        except Exception as msg:
+                            self.img_file_exists = False
+                            pass
+                    if self.raw_img.width != self.image_frame.winfo_width():
+                        self.raw_img = Image.open(self.img_get_path)        
                         self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
                         self.img = ImageTk.PhotoImage(self.raw_img)             
                         self.image_frame.config(image=self.img)                         
-                self.master.after(50, self.image_update)
+                self.master.after(1000, self.image_update)
                 
         def video_feed(self):           
                 if self.video_ready:

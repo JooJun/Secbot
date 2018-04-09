@@ -21,12 +21,12 @@ import bin.depthmap as depthmap
 import lib.fcrn.tensorflow.models as fcrn_model
 
 # Open and clear log file
-if os.path.exists('bin/main.log'):
-    open('bin/main.log', 'w').close()
+if os.path.exists('files/main.log'):
+    open('files/main.log', 'w').close()
 
 # Setup program primitives
 #mode = 1
-logging.basicConfig(filename='bin/main.log', level=logging.DEBUG)
+logging.basicConfig(filename='files/main.log', level=logging.DEBUG)
 
 ########################################################################
 logging.info('Set up...')
