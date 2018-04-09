@@ -7,3 +7,7 @@ depthmaps/
 lib/
 
 */__pycache__/
+
+*/*.swp
+
+*.swp
