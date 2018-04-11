@@ -14,6 +14,7 @@ import subprocess
 #Create config dictionary from file
 config = {}
 data_send = {}
+data_receive = {}
 
 with open("config.txt") as config_file:
 	for line in config_file:		
@@ -61,9 +62,9 @@ class App:
 		#self.master.minsize(res[1],res[0])                             
 		self.master.geometry(str(res[1])+"x"+str(res[0]))
 		
-		#Set 4 frames and put them into the grid (grid contains 4 equal boxes)
+		#####Set 4 frames and put them into the grid (grid contains 4 equal boxes)#####
 		
-		#Frame 1 will hold the VIDEO STREAM
+		###Frame 1 will hold the VIDEO STREAM###
 		self.frame1 = Label(self.master, background="grey")
 		self.frame1.grid(column = 0, row = 0, sticky='nsew')
 		self.frame1.grid_rowconfigure(0,weight = 1)
@@ -78,8 +79,9 @@ class App:
 		#Picture to display when no video present
 		self.vid_dis_img_path = '{0}/vid_disconnect.jpg'.format(config['content_folder'])				
 		
-		#Frame 2 BUTTONS
-		self.frame2 = Frame(self.master, background="gray")
+		###Frame 2 SWITCH / CONTROL PANEL SECTION###		
+		
+		self.frame2 = Frame(self.master, background='grey')
 		self.frame2.grid(column = 1, row = 0,sticky='nsew') 
 		self.frame2.grid_rowconfigure(0,weight = 1)
 		self.frame2.grid_columnconfigure(0,weight = 1)		
@@ -91,11 +93,18 @@ class App:
 		self.switch.configure(image=self.button_photo)		
 		#self.switch.configure(command=self.button_handler('button'))
 
-		self.switch.grid(sticky='w')
+		self.switch.grid(sticky='w')		
+	
+		self.switchpanel_background_img_raw = Image.open('{0}/metallic_background.jpg'.format(config['content_folder']))
+		# self.button_img_raw = self.button_img_raw.resize((40,100),Image.ANTIALIAS)		
+		self.switchpanel_background_img = ImageTk.PhotoImage(self.switchpanel_background_img_raw)			
+		self.frame2.configure(image=self.switchpanel_background_img)		
 		
 		data_send['control_status'] = 'Manual'
 		
-		#frame 3 contains the CONSOLE
+				
+		
+		###frame 3 contains the CONSOLE###
 		self.frame3 = Frame(self.master, background="black")
 		self.frame3.grid(column = 0, row = 1, sticky='nsew')    
 		self.frame3.grid_rowconfigure(0,weight = 1)
@@ -117,7 +126,7 @@ class App:
 		self.console_modified_time = 0
 		self.console_file_path = config['console_file_path']	
 
-		#Frame 4 MAP
+		###Frame 4 DEPTHMAP###
 		self.frame4 = Frame(self.master, background="black")
 		self.frame4.grid(column = 1, row = 1, sticky='nsew')    
 		self.frame4.grid_rowconfigure(0,weight = 1)
@@ -324,17 +333,25 @@ class App:
 		if event.char == 'q':
 			pass 	
 	
+	def data_exchange(self):
+		pass
+	
 	def switch_handler(self):		
 		if data_send['control_status'] == 'Manual':
-			data_send['control_status'] = 'Automatic'
+			
 			if self.ssh_ready:
-				file = self.ftp_client.open(config['data_exchange_file'],'w')
-				file.close()
-				file.open()
-				file.seek(0)
-				file.truncate()
-				file.write(data_send)
-				file.close()
+				try:
+					file = self.ftp_client.open(config['data_exchange_file'],'w')
+					file.close()
+					file.open()
+					file.seek(0)
+					file.truncate()
+					file.write(data_send)
+					file.close()
+					
+				except (paramiko.ssh_exception, socket.error) as msg:
+					pass
+					
 		else:
 			data_send['control_status'] = 'Manual'
 			if self.ssh_ready:
