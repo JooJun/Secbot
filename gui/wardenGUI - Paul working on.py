@@ -104,8 +104,7 @@ class App:
 		self.frame2_background_label = Label(self.frame2, image=self.switchpanel_background_img)
 		self.frame2_background_label.place(x=0, y=0, relwidth=1, relheight=1)		
 		
-		data_send['control_status'] = 'Manual'		
-				
+		data_send['control_status'] = 'Manual'					
 		
 	###frame 3 contains the CONSOLE### (Would like to add scrollbar but doesn't work so far)
 		self.frame3 = Frame(self.master, background="black")
@@ -117,10 +116,11 @@ class App:
 		self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)          
 		self.textArea.grid(sticky='nsew')
 		
-		self.console_fhandle = False    
+		#self.console_fhandle = False    
 		self.console_file_exists = False
 		self.console_modified_time = 0
-		self.console_file_path = config['console_file_path']	
+		self.console_remote = config['console_remote']	
+		self.console_local = config['console_local']
 
 	###Frame 4 DEPTHMAP###
 		self.frame4 = Frame(self.master, background="black")
@@ -138,6 +138,7 @@ class App:
 		self.depthmap_img_local = './'+config['content_folder']+config['depthmap_file_path_local'] 
 		try:
 			os.remove(self.depthmap_img_local)
+			os.remove(self.console_local)
 		except:
 			pass
 	##create instance of other classes
@@ -169,30 +170,7 @@ class App:
 		self.modifiedtime = 0
 		
 		self.authProblem = False		
-	
-	    #####some shit leftover from the SSH connect function                    
-		# file = 
-		# if self.ssh_ready == True and self.console_file_exists == False:
-			# #print("ssh ready and file doesnt exist")
-			# #print("should be attempting to open the file again")                           
-			# try:                                            
-				# self.console_fhandle = self.ftp_client.open(self.console_file_path)
-				# self.console_file_exists = True
-				# #print ("1")
-			# except Exception as msg:
-				# # print(msg)
-				# pass
-					
-			# if self.console_file_exists == True:                                                                                    
-				# self.textArea.config(state=NORMAL)      
-				# self.textArea.delete('1.0', END)
-				# self.textArea.config(state=DISABLED)
-				# try:
-					# modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime                                            
-				# except Exception as msg:
-					# modifiedtime = False
-					# self.console_file_exists = False	  
-	 
+		
 	def depmap_update(self):
 		file_data = self.connect.move_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)	
 		if file_data:				
@@ -210,6 +188,44 @@ class App:
 		except:
 			self.depthmap_file_exists = False				
 		self.master.after(1000, self.depmap_update)
+	
+	def write_to_console(self):
+		self.textArea.config(state=NORMAL)
+		self.textArea.delete('1.0', END)
+		self.textArea.insert(INSERT,"Waiting for console data")                 
+		self.textArea.config(state=DISABLED)
+		file_data = self.connect.move_file(self.console_remote,self.console_local,self.console_modified_time)	
+		if file_data:
+			if file_data['file_exists']:
+				try:
+					file = open(self.console_local)
+					lines = file.readlines()
+					if len(lines)>300:
+						line_start = (len(lines)-300)
+					else:
+						line_start = 0
+					self.textArea.config(state=NORMAL)
+					count = 0
+					print(len(lines),line_start)
+					while count<300:						
+						#self.textArea.config(state=NORMAL)              
+						self.textArea.insert(END,lines[line_start])
+						#self.textArea.config(state=DISABLED)
+						# self.textArea.see("end")
+						count+=1
+						line_start+=1
+					self.textArea.see("end")
+					self.textArea.config(state=DISABLED)
+				except Exception as msg:
+					print (msg)					
+		
+			else:
+				self.textArea.config(state=NORMAL)
+				self.textArea.delete('1.0', END)
+				self.textArea.insert(INSERT,"Waiting for console data")                 
+				self.textArea.config(state=DISABLED)
+				self.modifiedtime = 0
+		self.master.after(1000, self.write_to_console)
 	
 	def video_feed_initialiser(self):
 		if not self.connect.video_ready:
@@ -255,10 +271,6 @@ class App:
 				self.vid_dis_img = ImageTk.PhotoImage(self.vid_dis_raw_img)                     
 				self.video_frame.config(image=self.vid_dis_img)                 
 		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds			
-		
-	
-	def data_exchange(self):
-		pass
 	
 	def switch_handler(self):		
 		if data_send['control_status'] == 'Manual':
@@ -286,97 +298,6 @@ class App:
 				file.truncate()
 				file.write(data_send)
 				file.close()
-	       
-					
-	def write_to_console(self):
-		if self.console_file_exists == False:
-			# print("ssh ready? = ",self.ssh_ready)
-			# print("File exsists marked as false, at the top")
-			self.textArea.config(state=NORMAL)
-			self.textArea.delete('1.0', END)
-			self.textArea.insert(INSERT,"Waiting for console data")                 
-			self.textArea.config(state=DISABLED)
-			self.modifiedtime = 0
-			self.console_count = 0  
-			self.console_list = []  
-		################################################################################################
-			# self.connect.ssh_connect()
-			# try:                    
-				# ssh = self.ssh.exec_command('ls', timeout=5)
-			# except Exception as msg:
-				# #print (msg)
-				# pass
-			# if self.connect.ssh_ready == False and self.connect.pi_conn_ready == True:                              
-				# if self.authProblem != True:
-					# #print("ssh connect called")
-					# try:
-						# self.ssh.connect(self.pi_ip, username=self.pi_username, password=self.pi_password)
-						# connected = True
-					# except (paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
-					# #except (paramiko.SSHException, socket.error) as msg:
-						# print (msg)
-						# if str(msg) == 'Authentication failed.':
-							# self.authProblem = True
-						# self.ssh.close()
-						# #pass
-						# connected = False                                               
-							
-					# if connected == True:
-						# try:
-							# self.ftp_client=self.ssh.open_sftp()
-							# connect.ssh_ready = True   
-
-						# except (paramiko.ssh_exception, socket.error) as msg:
-							# # print (msg)
-							# pass
-					# else:                   
-						# connect.ssh_ready = False                                          
-
-			if self.connect.ssh_ready == True and self.console_file_exists == False:
-				#print("ssh ready and file doesnt exist")
-				#print("should be attempting to open the file again")                           
-				try:                                            
-					self.console_fhandle = self.ftp_client.open(self.console_file_path)
-					self.console_file_exists = True
-					#print ("1")
-				except Exception as msg:
-					# print(msg)
-					pass
-						
-				if self.console_file_exists == True:                                                                                    
-					self.textArea.config(state=NORMAL)      
-					self.textArea.delete('1.0', END)
-					self.textArea.config(state=DISABLED)
-					try:
-						modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime                                            
-					except Exception as msg:
-						modifiedtime = False
-						self.console_file_exists = False
-		
-		##################################################################################              
-		if self.console_file_exists:
-			try:
-				modifiedtime = self.ftp_client.stat(self.console_file_path).st_mtime
-			except:
-				modifiedtime = False
-			if modifiedtime:
-				if modifiedtime != self.console_modified_time or len(self.console_list) <1:                             
-					file_temp = self.console_fhandle.readlines()            
-					for item in file_temp:
-						self.console_list.append(item)
-					list_length = len(self.console_list)
-					while self.console_count < list_length-1:
-						self.textArea.config(state=NORMAL)              
-						self.textArea.insert(END,self.console_list[self.console_count])
-						self.textArea.config(state=DISABLED)
-						self.textArea.see("end")
-						self.console_count+=1
-					self.console_modified_time = modifiedtime
-			else:
-				#print("console file doesnt exist line 330")
-				self.console_file_exists = False
-				self.ssh
-		self.master.after(1000, self.write_to_console)      
 
 	def fullscreen(self,event=None):
 		if event.char == 'f' or event.num == 1 or event.keysym == 'Escape':

@@ -16,8 +16,9 @@ pi_password = vadelma77
 #Name or path of content folder locally content or /content/pictures
 content_folder = content
 
-#console file path and name (on the Pi)
-console_file_path = /home/pi/Devel/secbot/files/main.log
+#console file path and name (on the Pi and local copy)
+console_remote = /home/pi/Devel/secbot/files/main.log
+console_local = main.log
 
 #depthmap file paths and names (on the Pi and local copy)
 depthmap_file_path_remote = /home/pi/Devel/secbot/files/depth.png
