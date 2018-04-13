@@ -10,8 +10,7 @@ import threading
 from threading import Thread
 import socket
 import subprocess
-from classes.connect import Connect
-
+import classes.connect
 
 #Create config dictionary from file
 config = {}
@@ -24,7 +23,7 @@ with open("config.txt") as config_file:
 			parts = line.split('=')
 			config[parts[0].strip()] = parts[1].strip()
 
-#Video related imports
+#Video related
 import numpy as np
 import cv2 as cv
 from PIL import Image, ImageTk  
@@ -34,9 +33,8 @@ import imutils
 class App:
 	def __init__(self,master,res): 
 
-		# self.config = config
-		# self.pi_ip = config['pi_ip']
-		# self.cam_ip = config['cam_ip']
+		self.pi_ip = config['pi_ip']
+		self.cam_ip = config['cam_ip']
 		self.pi_username = config['pi_username']
 		self.pi_password = config['pi_password']
 		
@@ -128,20 +126,28 @@ class App:
 		self.frame4.grid_rowconfigure(0,weight = 1)
 		self.frame4.grid_columnconfigure(0,weight = 1)
 		
-		self.depthmap_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
-		self.depthmap_frame.grid(sticky = 'nsew')
+		self.image_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
+		self.image_frame.grid(sticky = 'nsew')
 		
-		
-		self.depthmap_modified_time = 0
-		self.depthmap_file_exists = False
+		self.img_modified_time = 0
+		self.img_file_exists = False
 		self.depthmap_img_remote = config['depthmap_file_path_remote'] 
-		self.depthmap_img_local = './'+config['content_folder']+config['depthmap_file_path_local'] 
-		try:
-			os.remove(self.depthmap_img_local)
-		except:
-			pass
-	##create instance of other classes
-		self.connect = Connect(config)		
+		self.depthmap_img_local = config['content_folder']+config['depthmap_file_path_local'] 
+		
+	###variables###	
+		#SSH settings
+		self.ssh = paramiko.SSHClient()
+		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())          
+		
+		#Set variables to check connections
+		#self.video_conn_ready = False
+		#self.pi_conn_ready = False
+		
+		#self.video_ready = False                
+		#self.ssh_ready = False    
+			
+		#create an instance of the connect class
+		connect = Connect(self.pi_ip,self.cam_ip)
 		
 	#Start threads:-
 		
@@ -158,7 +164,17 @@ class App:
 		#Video feed initialiser thread
 		self.video_feed_init_thread = Thread(target=self.video_feed_initialiser,args=())
 		self.video_feed_init_thread.daemon = True
-		self.video_feed_init_thread.start()	
+		self.video_feed_init_thread.start()
+		
+		# #Connections ready thread
+		# self.conn_thread = threading.Thread(target=self.conn_ready,args=())
+		# self.conn_thread.daemon = True
+		# self.conn_thread.start()    
+			
+		# #ssh connection thread
+		# self.ssh_connect_thread = threading.Thread(target=self.ssh_connect,args=())
+		# self.ssh_connect_thread.daemon = True
+		# self.ssh_connect_thread.start()  
 		
 		#Update the depthmap thread
 		self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
@@ -194,36 +210,60 @@ class App:
 					# self.console_file_exists = False	  
 	 
 	def depmap_update(self):
-		file_data = self.connect.move_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)	
-		if file_data:				
-			if file_data['file_exists']:					
-				if file_data['modified_time'] != self.depthmap_modified_time and file_data['file_size'] != 0:
-					self.depthmap_modified_time = file_data['modified_time']	
-				self.depthmap_file_exists = True		
-		try:
-			raw_img = Image.open(self.depthmap_img_local)
-			if raw_img.width != self.depthmap_frame.winfo_width():
-				raw_img = Image.open(self.depthmap_img_local)        
-				raw_img = raw_img.resize((self.depthmap_frame.winfo_width(),self.depthmap_frame.winfo_height()), Image.ANTIALIAS)
-				self.img = ImageTk.PhotoImage(raw_img)             
-				self.depthmap_frame.config(image=self.img) 
-		except:
-			self.depthmap_file_exists = False				
+		if self.img_file_exists == False:  
+			connect.ssh_ready = connect.ssh_connect('depth_map')
+			if connect.ssh_ready == True:                         
+				try:                                            
+					self.ftp_client.get(self.depthmap_img_remote, self.depthmap_img_local)
+					self.img_file_exists = True
+
+				except (paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
+					pass
+								
+				if self.img_file_exists == True: 
+					try:
+						self.img_modified_time = self.ftp_client.stat(self.depthmap_img_remote).st_mtime                                            
+					except Exception as msg:
+						self.img_modified_time = False
+						self.img_file_exists = False
+								
+		if self.img_file_exists:
+			self.raw_img = Image.open(self.depthmap_img_local)
+			try:
+				modified_time = self.ftp_client.stat(self.depthmap_img_remote).st_mtime
+				size_img = self.ftp_client.stat(self.depthmap_img_remote).st_size
+				#print(size_img)
+			except:
+				modified_time = False
+			if modified_time != self.img_modified_time and size_img != 0:
+				try:
+					self.ftp_client.get(self.depthmap_img_remote, self.depthmap_img_local)
+					self.raw_img = Image.open(self.depthmap_img_local)
+					self.img_modified_time = modified_time 
+				except Exception as msg:
+					self.img_file_exists = False
+					pass
+			if self.raw_img.width != self.image_frame.winfo_width():
+				self.raw_img = Image.open(self.depthmap_img_local)        
+				self.raw_img = self.raw_img.resize((self.image_frame.winfo_width(),self.image_frame.winfo_height()), Image.ANTIALIAS)
+				self.img = ImageTk.PhotoImage(self.raw_img)             
+				self.image_frame.config(image=self.img) 
+
 		self.master.after(1000, self.depmap_update)
 	
 	def video_feed_initialiser(self):
-		if not self.connect.video_ready:
+		if not self.video_ready:
 			#print("video feed initilaiser has recognised that self.video_ready is false")
-			if self.connect.video_conn_ready:
+			if self.video_conn_ready:
 				#print("attempting to reconnect the video connection")
 				self.vs = WebcamVideoStream(src="rtsp://"+self.cam_ip+":554/user=admin&password=&channel=1&stream=0.sdp?real_stream").start()              
 				if str(self.vs.read()) != 'None':       
 					#print("setting video_ready to true (self.vs is not none)")
-					self.connect.video_ready = True  
+					self.video_ready = True  
 		self.master.after(1000, self.video_feed_initialiser)  
 	
 	def video_feed(self):           
-		if self.connect.video_ready:
+		if self.video_ready:
 			try:
 				frame = self.vs.read()  #read the next frame                    
 				##resize the image
@@ -250,7 +290,7 @@ class App:
 		else:   
 				#print("should be setting video window to the video not there image")
 				self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
-				if self.vid_dis_raw_img.width != self.video_frame.winfo_width():
+				if self.vid_dis_raw_img.width != self.image_frame.winfo_width():
 					self.vid_dis_raw_img = self.vid_dis_raw_img.resize((self.video_frame.winfo_width(),self.video_frame.winfo_height()), Image.ANTIALIAS)
 				self.vid_dis_img = ImageTk.PhotoImage(self.vid_dis_raw_img)                     
 				self.video_frame.config(image=self.vid_dis_img)                 
@@ -263,7 +303,7 @@ class App:
 	def switch_handler(self):		
 		if data_send['control_status'] == 'Manual':
 			
-			if self.connect.ssh_ready:
+			if connect.ssh_ready:
 				try:
 					file = self.ftp_client.open(config['data_exchange_file'],'w')
 					file.close()
@@ -278,7 +318,7 @@ class App:
 					
 		else:
 			data_send['control_status'] = 'Manual'
-			if self.connect.ssh_ready:
+			if connect.ssh_ready:
 				file = self.ftp_client.open(config['data_exchange_file'],'w')
 				file.close()
 				file.open()
@@ -300,39 +340,39 @@ class App:
 			self.console_count = 0  
 			self.console_list = []  
 		################################################################################################
-			# self.connect.ssh_connect()
-			# try:                    
-				# ssh = self.ssh.exec_command('ls', timeout=5)
-			# except Exception as msg:
-				# #print (msg)
-				# pass
-			# if self.connect.ssh_ready == False and self.connect.pi_conn_ready == True:                              
-				# if self.authProblem != True:
-					# #print("ssh connect called")
-					# try:
-						# self.ssh.connect(self.pi_ip, username=self.pi_username, password=self.pi_password)
-						# connected = True
-					# except (paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
-					# #except (paramiko.SSHException, socket.error) as msg:
-						# print (msg)
-						# if str(msg) == 'Authentication failed.':
-							# self.authProblem = True
-						# self.ssh.close()
-						# #pass
-						# connected = False                                               
+			# self.ssh_connect_thread()
+			try:                    
+				ssh = self.ssh.exec_command('ls', timeout=5)
+			except Exception as msg:
+				#print (msg)
+				pass
+			if self.ssh_ready == False and connect.pi_conn_ready == True:                              
+				if self.authProblem != True:
+					#print("ssh connect called")
+					try:
+						self.ssh.connect(self.pi_ip, username=self.pi_username, password=self.pi_password)
+						connected = True
+					except (paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
+					#except (paramiko.SSHException, socket.error) as msg:
+						print (msg)
+						if str(msg) == 'Authentication failed.':
+							self.authProblem = True
+						self.ssh.close()
+						#pass
+						connected = False                                               
 							
-					# if connected == True:
-						# try:
-							# self.ftp_client=self.ssh.open_sftp()
-							# connect.ssh_ready = True   
+					if connected == True:
+						try:
+							self.ftp_client=self.ssh.open_sftp()
+							self.ssh_ready = True   
 
-						# except (paramiko.ssh_exception, socket.error) as msg:
-							# # print (msg)
-							# pass
-					# else:                   
-						# connect.ssh_ready = False                                          
+						except (paramiko.ssh_exception, socket.error) as msg:
+							# print (msg)
+							pass
+					else:                   
+						self.ssh_ready = False                                          
 
-			if self.connect.ssh_ready == True and self.console_file_exists == False:
+			if self.ssh_ready == True and self.console_file_exists == False:
 				#print("ssh ready and file doesnt exist")
 				#print("should be attempting to open the file again")                           
 				try:                                            
