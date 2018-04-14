@@ -1,5 +1,5 @@
 import time
-import threading
+import queue, threading
 import subprocess
 from platform import system as system_name  
 from subprocess import call as system_call 
@@ -33,8 +33,8 @@ class Connect:
 		#Connections ready thread
 		self.conn_thread = threading.Thread(target=self.conn_ready,args=())
 		self.conn_thread.daemon = True
-		self.conn_thread.start() 		
-	
+		self.conn_thread.start() 
+		
 	def conn_ready(self): 
 			while True: 
 				ssh = False
@@ -71,7 +71,8 @@ class Connect:
 		self.ssh_connecting = True
 		if self.ssh_ready == False and self.pi_conn_ready == True:                              
 			if self.authProblem != True:
-				try:					
+				try:		
+					self.console_list = []
 					self.ssh.connect(self.pi_ip, username=self.pi_username, password=self.pi_password)
 					self.ftp_client=self.ssh.open_sftp()					
 					self.ssh_ready = True				
@@ -83,8 +84,8 @@ class Connect:
 					self.ssh.close()				
 		self.ssh_connecting = False	
 
-	#Function actually moves the files via SFTP, checking first the modified time	
-	def move_file(self,remote,local,modified_time):
+	#Function moves the files via SFTP, if modified time is different	
+	def get_file(self,remote,local,modified_time):
 		file_data = {}		
 		if self.ssh_ready: 
 			try:
@@ -94,12 +95,17 @@ class Connect:
 			except (Exception, paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
 				file_data['file_exists'] = False
 				file_data['modified_time'] = 0
-				print(msg)				
+				#print(msg)				
 			if file_data['modified_time'] != modified_time:
-				try:
+				try:	
 					self.ftp_client.get(remote,local)				
 					file_data['file_exists'] = True			
 				except (Exception, paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
-					print("error when trying to get {0}: {1}".format(remote,str(msg)))
+					#print("error when trying to get {0}: {1}".format(remote,str(msg)))
 					file_data['file_exists'] = False
-			return file_data		
+					file_data['modified_time'] = 0
+			return file_data
+			
+	def put_file(self,file,remote):
+		pass
+		

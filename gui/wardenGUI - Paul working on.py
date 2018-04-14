@@ -114,13 +114,13 @@ class App:
 		# self.frame3.grid_columnconfigure(1,weight = 1)
 						
 		self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)          
-		self.textArea.grid(sticky='nsew')
-		
-		#self.console_fhandle = False    
+		self.textArea.grid(sticky='nsew')		
+   
 		self.console_file_exists = False
 		self.console_modified_time = 0
 		self.console_remote = config['console_remote']	
-		self.console_local = config['console_local']
+		self.console_local = config['content_folder']+"/"+config['console_local']
+		self.previous_console_length = 0
 
 	###Frame 4 DEPTHMAP###
 		self.frame4 = Frame(self.master, background="black")
@@ -129,8 +129,7 @@ class App:
 		self.frame4.grid_columnconfigure(0,weight = 1)
 		
 		self.depthmap_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="black")
-		self.depthmap_frame.grid(sticky = 'nsew')
-		
+		self.depthmap_frame.grid(sticky = 'nsew')		
 		
 		self.depthmap_modified_time = 0
 		self.depthmap_file_exists = False
@@ -150,6 +149,7 @@ class App:
 		self.console_thread = threading.Thread(target=self.write_to_console,args=())
 		self.console_thread.daemon = True
 		self.console_thread.start()
+		#self.write_to_console()
 		
 		#Video feed thread
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
@@ -172,7 +172,7 @@ class App:
 		self.authProblem = False		
 		
 	def depmap_update(self):
-		file_data = self.connect.move_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)	
+		file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)	
 		if file_data:				
 			if file_data['file_exists']:					
 				if file_data['modified_time'] != self.depthmap_modified_time and file_data['file_size'] != 0:
@@ -189,42 +189,36 @@ class App:
 			self.depthmap_file_exists = False				
 		self.master.after(1000, self.depmap_update)
 	
-	def write_to_console(self):
-		self.textArea.config(state=NORMAL)
-		self.textArea.delete('1.0', END)
-		self.textArea.insert(INSERT,"Waiting for console data")                 
-		self.textArea.config(state=DISABLED)
-		file_data = self.connect.move_file(self.console_remote,self.console_local,self.console_modified_time)	
-		if file_data:
-			if file_data['file_exists']:
-				try:
-					file = open(self.console_local)
-					lines = file.readlines()
-					if len(lines)>300:
-						line_start = (len(lines)-300)
-					else:
-						line_start = 0
+	def write_to_console(self):			
+		file_data = self.connect.get_file(self.console_remote,self.console_local,self.console_modified_time)
+		if file_data and file_data['file_exists']:
+			file = open(self.console_local).readlines()
+			self.console_modified_time = file_data['modified_time']	
+			file_length = len(file)
+			if file_length != self.previous_console_length:
+				self.previous_console_length = file_length
+				#Restrict to only printing tailing 100 lines				
+				if file_length > 100:
+					file = file[file_length-101:file_length-1]
+				#Print lines to the text area
+				try:					
 					self.textArea.config(state=NORMAL)
-					count = 0
-					print(len(lines),line_start)
-					while count<300:						
-						#self.textArea.config(state=NORMAL)              
-						self.textArea.insert(END,lines[line_start])
-						#self.textArea.config(state=DISABLED)
-						# self.textArea.see("end")
-						count+=1
-						line_start+=1
-					self.textArea.see("end")
+					self.textArea.delete('1.0', END)
+					for item in file:					
+						self.textArea.insert(END,item)	
 					self.textArea.config(state=DISABLED)
+					self.textArea.see("end")				
 				except Exception as msg:
-					print (msg)					
-		
+					print ("Exception is on 202"+str(msg))	
 			else:
-				self.textArea.config(state=NORMAL)
-				self.textArea.delete('1.0', END)
-				self.textArea.insert(INSERT,"Waiting for console data")                 
-				self.textArea.config(state=DISABLED)
-				self.modifiedtime = 0
+				print("skipped it")
+		else:
+			self.textArea.config(state=NORMAL)
+			self.textArea.delete('1.0', END)
+			self.textArea.insert(INSERT,"Waiting for console data")                 
+			self.textArea.config(state=DISABLED)
+			self.modifiedtime = 0
+			self.console_file_exists = False
 		self.master.after(1000, self.write_to_console)
 	
 	def video_feed_initialiser(self):
@@ -273,8 +267,7 @@ class App:
 		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds			
 	
 	def switch_handler(self):		
-		if data_send['control_status'] == 'Manual':
-			
+		if data_send['control_status'] == 'Manual':			
 			if self.connect.ssh_ready:
 				try:
 					file = self.ftp_client.open(config['data_exchange_file'],'w')
