@@ -16,7 +16,7 @@ from classes.connect import Connect
 #Create config dictionary from file
 config = {}
 data_send = {}
-data_receive = {}
+#data_receive = {}
 
 with open("config.txt") as config_file:
 	for line in config_file:		
@@ -102,9 +102,12 @@ class App:
 		# self.button_img_raw = self.button_img_raw.resize((40,100),Image.ANTIALIAS)		
 		self.switchpanel_background_img = ImageTk.PhotoImage(self.switchpanel_background_img_raw)		
 		self.frame2_background_label = Label(self.frame2, image=self.switchpanel_background_img)
-		self.frame2_background_label.place(x=0, y=0, relwidth=1, relheight=1)		
+		self.frame2_background_label.place(x=0, y=0, relwidth=1, relheight=1)			
 		
-		data_send['control_status'] = 'Manual'					
+		data_send['control_status'] = 'Manual'		
+		self.data_local = config['content_folder']+"/"+config['console_local']
+		self.data_remote = config['content_folder']+"/"+config['console_remote']
+		
 		
 	###frame 3 contains the CONSOLE### (Would like to add scrollbar but doesn't work so far)
 		self.frame3 = Frame(self.master, background="black")
@@ -256,7 +259,7 @@ class App:
 				self.video_frame.config(image=imagetk)  # show the image in image_box
 			except:
 					pass
-					
+		#Sets the window to video disconnect picture				
 		else:   
 				#print("should be setting video window to the video not there image")
 				self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
@@ -267,19 +270,18 @@ class App:
 		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds			
 	
 	def switch_handler(self):		
-		if data_send['control_status'] == 'Manual':			
-			if self.connect.ssh_ready:
-				try:
-					file = self.ftp_client.open(config['data_exchange_file'],'w')
-					file.close()
-					file.open()
-					file.seek(0)
-					file.truncate()
-					file.write(data_send)
-					file.close()
-					
-				except (paramiko.ssh_exception, socket.error) as msg:
-					pass
+		if data_send['control_status'] == 'Manual':
+			new_setting = 'auto'
+				self.connect.
+				file.close()
+				file.open()
+				file.seek(0)
+				file.truncate()
+				file.write(data_send)
+				file.close()
+				
+			except (paramiko.ssh_exception, socket.error) as msg:
+				pass
 					
 		else:
 			data_send['control_status'] = 'Manual'

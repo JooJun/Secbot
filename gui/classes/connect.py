@@ -106,6 +106,10 @@ class Connect:
 					file_data['modified_time'] = 0
 			return file_data
 			
-	def put_file(self,file,remote):
-		pass
-		
+	def put_file(self,local,remote):
+		if self.ssh_ready:
+			try:
+				self.ftp_client.get(local,remote)
+				return True
+			except:
+				return False		
