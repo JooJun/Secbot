@@ -1,22 +1,36 @@
-import socket
-from platform import system as system_name  
-from subprocess import call as system_call 
-import paramiko
-from tkinter import *#, ttk from tkinter import ttk
+#system
 import os
 import time
 import datetime
 import threading
+from platform import system as system_name  
+from subprocess import call as system_call 
 from threading import Thread
-import socket
 import subprocess
-from classes.connect import Connect
 
+#ssh/sftp
+import paramiko
+import socket
+
+#tkinter
+from tkinter import *#, ttk from tkinter import ttk
+import tkinter as tk
+import tkinter.scrolledtext as tkst
+
+#Video related imports
+import numpy as np
+import cv2 as cv
+from PIL import Image, ImageTk  
+from imutils.video import FPS, WebcamVideoStream, FileVideoStream
+import imutils
+
+#Own classes
+from classes.connect import Connect  
 
 #Create config dictionary from file
 config = {}
 data_send = {}
-#data_receive = {}
+data_receive = {}
 
 with open("config.txt") as config_file:
 	for line in config_file:		
@@ -24,21 +38,8 @@ with open("config.txt") as config_file:
 			parts = line.split('=')
 			config[parts[0].strip()] = parts[1].strip()
 
-#Video related imports
-import numpy as np
-import cv2 as cv
-from PIL import Image, ImageTk  
-from imutils.video import FPS, WebcamVideoStream, FileVideoStream
-import imutils          
-
 class App:
 	def __init__(self,master,res): 
-
-		# self.config = config
-		# self.pi_ip = config['pi_ip']
-		# self.cam_ip = config['cam_ip']
-		self.pi_username = config['pi_username']
-		self.pi_password = config['pi_password']
 		
 		#Pass the parameter master to variable self.master
 		self.master = master
@@ -58,17 +59,19 @@ class App:
 		#Configure the master frame's grid
 		self.master.grid_rowconfigure(0, weight=1)
 		self.master.grid_rowconfigure(1, weight=1)
-		self.master.grid_columnconfigure(0, weight=1)           
-		self.master.grid_columnconfigure(1, weight=1)
+		self.master.grid_columnconfigure(0, weight=40)           
+		self.master.grid_columnconfigure(1, weight=28)
+		self.master.grid_propagate(False)
 		
 		#Set the opening resolution, and minsize if required
 		#self.master.minsize(res[1],res[0])                             
 		self.master.geometry(str(res[1])+"x"+str(res[0]))
 		
 	#####Set 4 frames and put them into the grid (grid contains 4 equal boxes)#####
-		
+	###############################################################################
+	
 	###Frame 1 will hold the VIDEO STREAM###
-		self.frame1 = Label(self.master, background="grey")
+		self.frame1 = Label(self.master, background="grey",relief=RIDGE)
 		self.frame1.grid(column = 0, row = 0, sticky='nsew')
 		self.frame1.grid_rowconfigure(0,weight = 1)
 		self.frame1.grid_columnconfigure(0,weight = 1)
@@ -84,46 +87,56 @@ class App:
 		
 	###Frame 2 SWITCH / CONTROL PANEL SECTION###		
 		
-		self.frame2 = Frame(self.master, background='grey')
-		self.frame2.grid(column = 1, row = 0,sticky='nsew') 
+		self.frame2 = Frame(self.master, background='black')
+		self.frame2.grid(column = 1, row = 0,sticky='nsew')
 		self.frame2.grid_rowconfigure(0,weight = 1)
-		self.frame2.grid_columnconfigure(0,weight = 1)		
-			
-		self.switch = Button(self.frame2,width=40,height=100,command=self.switch_handler)		
-		self.button_img_raw = Image.open('{0}/button.png'.format(config['content_folder']))
-		self.button_img_raw = self.button_img_raw.resize((40,100),Image.ANTIALIAS)		
-		self.button_photo = ImageTk.PhotoImage(self.button_img_raw)			
-		self.switch.configure(image=self.button_photo)		
-		#self.switch.configure(command=self.button_handler('button'))
-
-		#self.switch.grid(sticky='w')		
-	
-		self.switchpanel_background_img_raw = Image.open('{0}/metallic_background.jpg'.format(config['content_folder']))
-		# self.button_img_raw = self.button_img_raw.resize((40,100),Image.ANTIALIAS)		
+		self.frame2.grid_columnconfigure(0,weight = 1)
+		# self.frame2.grid_propagate(False)
+		
+		#Panel background image
+		self.switchpanel_background_img_raw = Image.open('{0}/metal_black.jpg'.format(config['content_folder']))
+		self.switchpanel_background_img_raw = self.switchpanel_background_img_raw.resize((600,800),Image.ANTIALIAS)		
 		self.switchpanel_background_img = ImageTk.PhotoImage(self.switchpanel_background_img_raw)		
 		self.frame2_background_label = Label(self.frame2, image=self.switchpanel_background_img)
-		self.frame2_background_label.place(x=0, y=0, relwidth=1, relheight=1)			
+		self.frame2_background_label.place(x=0, y=0, relwidth=1, relheight=1)
 		
-		data_send['control_status'] = 'Manual'		
-		self.data_local = config['content_folder']+"/"+config['console_local']
-		self.data_remote = config['content_folder']+"/"+config['console_remote']
+		#Panel auto/manual switch
+		self.switch = tk.Button(self.frame2,width=170,height=60,command=self.switch_handler,relief=FLAT,activebackground='black')		
+		self.button_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))
+		self.button_img_raw = self.button_img_raw.resize((170,60),Image.ANTIALIAS)		
+		self.button_photo = ImageTk.PhotoImage(self.button_img_raw)			
+		self.switch.configure(image=self.button_photo,bg='black')		
+
+		self.switch.configure(command=self.switch_handler,text="Please Wait")
+		self.switch.grid(sticky='nw',padx=10,pady=10)
 		
+		#initialise the control_status
+		data_send['control_status'] = 'Manual'	
+			
+		#data file remote and local paths
+		self.data_local = config['content_folder']+"/"+config['data_local']
+		self.data_remote = config['content_folder']+"/"+config['data_remote']
 		
-	###frame 3 contains the CONSOLE### (Would like to add scrollbar but doesn't work so far)
+	###frame 3 contains the CONSOLE### 
 		self.frame3 = Frame(self.master, background="black")
 		self.frame3.grid(column = 0, row = 1, sticky='nsew')    
 		self.frame3.grid_rowconfigure(0,weight = 1)
 		self.frame3.grid_columnconfigure(0,weight = 1)
 		# self.frame3.grid_columnconfigure(1,weight = 1)
 						
-		self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)          
-		self.textArea.grid(sticky='nsew')		
+		self.textArea = tkst.ScrolledText(self.frame3,wrap=WORD, foreground="black", background="white", width=-1, height=-1, state=DISABLED)          
+		#self.textArea = Text(self.frame3,wrap=WORD, foreground="black", background="white", width=1, height=1, state=DISABLED)          
+		self.textArea.grid(sticky='nsew')
    
+		#initilaise console variables
 		self.console_file_exists = False
-		self.console_modified_time = 0
+		self.previous_console_length = 0
+		self.console_list = []
+		self.console_modifiedtime = 0
+		
+		#Set the console local and remote paths
 		self.console_remote = config['console_remote']	
 		self.console_local = config['content_folder']+"/"+config['console_local']
-		self.previous_console_length = 0
 
 	###Frame 4 DEPTHMAP###
 		self.frame4 = Frame(self.master, background="black")
@@ -167,13 +180,36 @@ class App:
 		#Update the depthmap thread
 		self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
 		self.depmap_thread.daemon = True
-		self.depmap_thread.start()                 
+		self.depmap_thread.start()   
 		
-		self.console_list = []
-		self.modifiedtime = 0
+	def switch_handler(self):
 		
-		self.authProblem = False		
-		
+		if data_send['control_status'] == 'Manual':
+			
+			
+			# new_setting = 'auto'
+				# self.connect.
+				# file.close()
+				# file.open()
+				# file.seek(0)
+				# file.truncate()
+				# file.write(data_send)
+				# file.close()
+				
+			except (paramiko.ssh_exception, socket.error) as msg:
+				pass
+					
+		else:
+			data_send['control_status'] = 'Manual'
+			if self.connect.ssh_ready:
+				file = self.ftp_client.open(config['data_exchange_file'],'w')
+				file.close()
+				file.open()
+				file.seek(0)
+				file.truncate()
+				file.write(data_send)
+				file.close()
+	
 	def depmap_update(self):
 		file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)	
 		if file_data:				
@@ -204,23 +240,23 @@ class App:
 				if file_length > 100:
 					file = file[file_length-101:file_length-1]
 				#Print lines to the text area
-				try:					
-					self.textArea.config(state=NORMAL)
-					self.textArea.delete('1.0', END)
-					for item in file:					
-						self.textArea.insert(END,item)	
-					self.textArea.config(state=DISABLED)
+				try:
+					self.textArea.delete(1.0, END)
+					for item in file:	
+						self.textArea.config(state=NORMAL)
+						self.textArea.insert(END,item)
+						self.textArea.config(state=DISABLED)					
 					self.textArea.see("end")				
 				except Exception as msg:
-					print ("Exception is on 202"+str(msg))	
+					print ("Exception is on 215"+str(msg))	
 			else:
-				print("skipped it")
+				pass
 		else:
 			self.textArea.config(state=NORMAL)
 			self.textArea.delete('1.0', END)
 			self.textArea.insert(INSERT,"Waiting for console data")                 
 			self.textArea.config(state=DISABLED)
-			self.modifiedtime = 0
+			self.console_modifiedtime = 0
 			self.console_file_exists = False
 		self.master.after(1000, self.write_to_console)
 	
@@ -261,38 +297,13 @@ class App:
 					pass
 		#Sets the window to video disconnect picture				
 		else:   
-				#print("should be setting video window to the video not there image")
-				self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
-				if self.vid_dis_raw_img.width != self.video_frame.winfo_width():
-					self.vid_dis_raw_img = self.vid_dis_raw_img.resize((self.video_frame.winfo_width(),self.video_frame.winfo_height()), Image.ANTIALIAS)
-				self.vid_dis_img = ImageTk.PhotoImage(self.vid_dis_raw_img)                     
-				self.video_frame.config(image=self.vid_dis_img)                 
-		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds			
-	
-	def switch_handler(self):		
-		if data_send['control_status'] == 'Manual':
-			new_setting = 'auto'
-				self.connect.
-				file.close()
-				file.open()
-				file.seek(0)
-				file.truncate()
-				file.write(data_send)
-				file.close()
-				
-			except (paramiko.ssh_exception, socket.error) as msg:
-				pass
-					
-		else:
-			data_send['control_status'] = 'Manual'
-			if self.connect.ssh_ready:
-				file = self.ftp_client.open(config['data_exchange_file'],'w')
-				file.close()
-				file.open()
-				file.seek(0)
-				file.truncate()
-				file.write(data_send)
-				file.close()
+			#print("should be setting video window to the video not there image")
+			self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
+			if self.vid_dis_raw_img.width != self.video_frame.winfo_width():
+				self.vid_dis_raw_img = self.vid_dis_raw_img.resize((self.video_frame.winfo_width(),self.video_frame.winfo_height()), Image.ANTIALIAS)
+			self.vid_dis_img = ImageTk.PhotoImage(self.vid_dis_raw_img)                     
+			self.video_frame.config(image=self.vid_dis_img)                 
+		self.master.after(50, self.video_feed)# cause the function to be called after X milliseconds		
 
 	def fullscreen(self,event=None):
 		if event.char == 'f' or event.num == 1 or event.keysym == 'Escape':

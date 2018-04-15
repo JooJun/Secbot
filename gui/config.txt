@@ -25,6 +25,6 @@ depthmap_file_path_remote = /home/pi/Devel/secbot/files/depth.png
 depthmap_file_path_local = /depth/depth.png
 
 #Data send file path and name
-data_exchange_file_remote = /home/pi/Devel/secbot/files/data.txt
-data_exchange_file_local = data.txt
+data_remote = /home/pi/Devel/secbot/files/data.txt
+data_local = data.txt
 

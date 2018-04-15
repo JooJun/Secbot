@@ -112,4 +112,18 @@ class Connect:
 				self.ftp_client.get(local,remote)
 				return True
 			except:
-				return False		
+				return False
+
+	def get_file_lines(self,remote):
+		file_data = {}		
+		if self.ssh_ready: 			
+			try:
+				fhandle = self.ftp_client.open(remote,'r')
+				list = fhandle.readlines()				
+				fhandle.close()
+				return list
+			except (Exception, paramiko.ssh_exception.AuthenticationException, socket.error, IOError) as msg:
+				print("error when trying to open {0}: {1}".format(remote,str(msg)))
+				return False
+		else:
+			return False
