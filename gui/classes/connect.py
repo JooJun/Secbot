@@ -101,7 +101,6 @@ class Connect:
 					self.ftp_client.get(remote,local)				
 					file_data['file_exists'] = True			
 				except (Exception, paramiko.ssh_exception.AuthenticationException, socket.error) as msg:
-					#print("error when trying to get {0}: {1}".format(remote,str(msg)))
 					file_data['file_exists'] = False
 					file_data['modified_time'] = 0
 			return file_data
