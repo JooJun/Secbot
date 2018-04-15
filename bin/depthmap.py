@@ -7,11 +7,17 @@ from imutils.video import FPS, WebcamVideoStream, FileVideoStream
 def depthmap_func(network, session, input_node):
 
     # Path settings
-    image_path = video_feed()
-    #image_path = '/home/pi/Devel/secbot/files/cam.jpg'
-    #image_path = r'C:\Coding\Secbot\files\cam.jpg'
-    image_output = '/home/pi/Devel/secbot/files/depth.png'
-    #image_output = r'C:\Coding\Secbot\files\depth.png'
+    try:
+        #image_path = video_feed()
+        #while not image_path:
+            #image_path = video_feed()
+        #image_path = '/home/pi/Devel/secbot/files/cam.jpg'
+        image_path = r'C:\Coding\Secbot\files\cam.jpg'
+    except:
+        return None
+
+    #image_output = '/home/pi/Devel/secbot/files/depth.png'
+    image_output = r'C:\Coding\Secbot\files\depth.png'
 
     # Input size
     #height = 360
@@ -20,7 +26,9 @@ def depthmap_func(network, session, input_node):
     width = 384
 
     # Read Camera image 
-    img = cv2.resize(image_path, dsize=(width, height), interpolation=cv2.INTER_CUBIC)
+    img = Image.open(image_path)
+    img = img.resize([width, height], Image.ANTIALIAS)
+    #img = cv.resize(image_path, dsize=(width, height), interpolation=cv.INTER_CUBIC)
     img = np.array(img).astype('float32')
     img = np.expand_dims(np.asarray(img), axis = 0)
 
@@ -60,10 +68,9 @@ def video_feed():
     if video_ready and vs:
         try:
             frame = vs.read()
-            cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)a
+            cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)
             return cvimage
         except:
             return None
-            pass
     else:
         return None

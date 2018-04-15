@@ -15,14 +15,14 @@ def controller_func(mode):
     ratio = 480/32767
 
     #Creating a dictionary of axis names, allows the use of easy labels such as 'leftstick'
-    axis_names = {	
+    axis_names = {      
         0x01 : 'leftstick',
         0x05 : 'rightstick'
         # 0x05 : 'rightstick'
     }
 
     button_names = {
-        0x13c : 'psbutton'	
+        0x13c : 'psbutton'      
     }
 
     jsdev = False
@@ -66,50 +66,50 @@ def controller_func(mode):
         button_map.append(btn_name)
         button_states[btn_name] = 0
 
-    try:	
+    try:        
         motors.enable()
         motors.setSpeeds(0, 0)
 
         # Main event loop
         while status:
-			try:
-				console = open(console_path,'a')
-				current_time = str(datetime.datetime.now())[:19]
-				console.write(current_time +": "+ line)
-				console.close()
-				while not jsdev:
-					try:
-						fn = '/dev/input/js0'
-						jsdev = open(fn, 'rb')	
-						count=0
-					except:
-						pass
-				evbuf = jsdev.read(8)
-				if evbuf:
-						time, value, type, number = struct.unpack('IhBB', evbuf)
-						if number == 16 and value ==1:
-							print ("number 16 was pressed")
-							bluetooth = subprocess.Popen(["bluetoothctl"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
-							bluetooth.stdin.write(b"disconnect 00:1B:FB:21:14:98")
-							bluetooth.stdin.flush()
-							output, errors = bluetooth.communicate()
-							motors.setSpeeds(0, 0)
-							#print(output,errors)
-							#print("ps logo pressed",value)	
-							jsdev = False
+                        try:
+                                console = open(console_path,'a')
+                                current_time = str(datetime.datetime.now())[:19]
+                                console.write(current_time +": "+ line)
+                                console.close()
+                                while not jsdev:
+                                        try:
+                                                fn = '/dev/input/js0'
+                                                jsdev = open(fn, 'rb')  
+                                                count=0
+                                        except:
+                                                pass
+                                evbuf = jsdev.read(8)
+                                if evbuf:
+                                                time, value, type, number = struct.unpack('IhBB', evbuf)
+                                                if number == 16 and value ==1:
+                                                        print ("number 16 was pressed")
+                                                        bluetooth = subprocess.Popen(["bluetoothctl"],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
+                                                        bluetooth.stdin.write(b"disconnect 00:1B:FB:21:14:98")
+                                                        bluetooth.stdin.flush()
+                                                        output, errors = bluetooth.communicate()
+                                                        motors.setSpeeds(0, 0)
+                                                        #print(output,errors)
+                                                        #print("ps logo pressed",value) 
+                                                        jsdev = False
 
-						if type:				
-							#print (type, value, number)
-							axis = axis_map[number]
-							if axis == "leftstick" or axis == "rightstick":	
-								if count>5:
-									axis = axis_map[number]
-									axis_states[axis] = int(value*ratio)	
-									#print ("Left stick value {}, Right stick value {}".format(axis_states['leftstick'], axis_states['rightstick']))
-									motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])			
-							count+=1
-			except:
-				pass
+                                                if type:                                
+                                                        #print (type, value, number)
+                                                        axis = axis_map[number]
+                                                        if axis == "leftstick" or axis == "rightstick": 
+                                                                if count>5:
+                                                                        axis = axis_map[number]
+                                                                        axis_states[axis] = int(value*ratio)    
+                                                                        #print ("Left stick value {}, Right stick value {}".format(axis_states['leftstick'], axis_states['rightstick']))
+                                                                        motors.setSpeeds(axis_states['leftstick'], axis_states['rightstick'])                   
+                                                        count+=1
+                        except:
+                                pass
     #Stop the motors if there is an exception of user presses Ctrl-C to kill process
 
     finally:

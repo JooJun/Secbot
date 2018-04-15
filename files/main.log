@@ -1,23 +1,25 @@
 INFO:root:Set up...
 INFO:root:Warming up...
 INFO:tensorflow:Restoring parameters from C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt
-INFO:root:Time taken -tf : 2.5974492351771534
+INFO:root:Time taken -tf : 3.031891271162454
 INFO:root:1 run
-INFO:root:Time taken -cam : 3.0131777936294832
+INFO:root:Time taken -cam : 1.4089600469919281
 INFO:root:2 run
-INFO:root:Time taken -cam : 2.5990578718388324
+INFO:root:Time taken -cam : 0.9426934538554184
 INFO:root:3 run
-INFO:root:Time taken -cam : 2.590438342634476
+INFO:root:Time taken -cam : 0.9453035902006981
 INFO:root:4 run
-INFO:root:Time taken -cam : 2.5971689573784307
+INFO:root:Time taken -cam : 1.029496277634503
 INFO:root:5 run
-INFO:root:Time taken -cam : 2.5875625345166053
+INFO:root:Time taken -cam : 1.0657389603114789
 INFO:root:6 run
-INFO:root:Time taken -cam : 2.5809175821421206
+INFO:root:Time taken -cam : 0.9427878008890733
 INFO:root:7 run
-INFO:root:Time taken -cam : 2.5770489590048307
+INFO:root:Time taken -cam : 0.9384269151954374
 INFO:root:8 run
-INFO:root:Time taken -cam : 2.583780758021174
+INFO:root:Time taken -cam : 0.9419690739108351
 INFO:root:9 run
-INFO:root:Time taken -cam : 2.5750700398428705
-INFO:root:Done!
+INFO:root:Time taken -cam : 1.0381975216336965
+INFO:root:Warming up... Done!
+INFO:root:Starting autonomous control...
+INFO:root:Exiting program...

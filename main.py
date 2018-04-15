@@ -25,7 +25,7 @@ if os.path.exists('files/main.log'):
     open('files/main.log', 'w').close()
 
 # Setup program primitives
-#mode = 1
+mode = 2
 logging.basicConfig(filename='files/main.log', level=logging.DEBUG)
 
 ########################################################################
@@ -41,8 +41,8 @@ width = 384
 height = 216
 channels = 3
 batch = 1
-model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
-#model_path = r'C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt'
+#model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
+model_path = r'C:\Coding\Secbot\lib\fcrn\models\NYU_FCRN.ckpt'
 
 # Initializing Tensorflow and run startups
 # Placeholder for input image
@@ -79,7 +79,7 @@ while mode:
 
     if mode == 2:
         logging.info('Starting autonomous control...')
-        mode = auto.autonomous_func(mode)
+        mode = auto.autonomous_func(mode, network, session, input_placeholder)
 
     if not mode:
         break
