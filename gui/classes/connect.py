@@ -109,7 +109,7 @@ class Connect:
 	def put_file(self,local,remote):
 		if self.ssh_ready:
 			try:
-				self.ftp_client.get(local,remote)
+				self.ftp_client.put(local,remote)
 				return True
 			except:
 				return False

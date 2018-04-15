@@ -100,22 +100,30 @@ class App:
 		self.frame2_background_label = Label(self.frame2, image=self.switchpanel_background_img)
 		self.frame2_background_label.place(x=0, y=0, relwidth=1, relheight=1)
 		
-		#Panel auto/manual switch
-		self.switch = tk.Button(self.frame2,width=170,height=60,command=self.switch_handler,relief=FLAT,activebackground='black')		
-		self.button_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))
-		self.button_img_raw = self.button_img_raw.resize((170,60),Image.ANTIALIAS)		
-		self.button_photo = ImageTk.PhotoImage(self.button_img_raw)			
-		self.switch.configure(image=self.button_photo,bg='black')		
-
-		self.switch.configure(command=self.switch_handler,text="Please Wait")
+		#Panel auto/manual switch initilaise
+		self.switch = tk.Button(self.frame2,width=170,height=60,command=self.switch_handler,relief=FLAT,activebackground='black')
+		self.switch.configure(command=self.switch_handler)
 		self.switch.grid(sticky='nw',padx=10,pady=10)
 		
+		#auto picture
+		self.auto_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))
+		self.auto_img_raw = self.auto_img_raw.resize((170,60),Image.ANTIALIAS)		
+		self.auto_photo = ImageTk.PhotoImage(self.auto_img_raw)
+		
+		#manual picture
+		self.manual_img_raw = Image.open('{0}/manual_button.png'.format(config['content_folder']))
+		self.manual_img_raw = self.manual_img_raw.resize((170,60),Image.ANTIALIAS)		
+		self.manual_photo = ImageTk.PhotoImage(self.manual_img_raw)
+		
+		#initialise switch pic
+		self.switch.configure(image=self.manual_photo,bg='black')	
+		
 		#initialise the control_status
-		data_send['control_status'] = 'Manual'	
+		data_send["control_status"] = "manual"
 			
 		#data file remote and local paths
 		self.data_local = config['content_folder']+"/"+config['data_local']
-		self.data_remote = config['content_folder']+"/"+config['data_remote']
+		self.data_remote = config['data_remote']
 		
 	###frame 3 contains the CONSOLE### 
 		self.frame3 = Frame(self.master, background="black")
@@ -132,7 +140,7 @@ class App:
 		self.console_file_exists = False
 		self.previous_console_length = 0
 		self.console_list = []
-		self.console_modifiedtime = 0
+		self.console_modified_time = 0
 		
 		#Set the console local and remote paths
 		self.console_remote = config['console_remote']	
@@ -182,33 +190,54 @@ class App:
 		self.depmap_thread.daemon = True
 		self.depmap_thread.start()   
 		
-	def switch_handler(self):
-		
-		if data_send['control_status'] == 'Manual':
-			
-			
-			# new_setting = 'auto'
-				# self.connect.
-				# file.close()
-				# file.open()
-				# file.seek(0)
-				# file.truncate()
-				# file.write(data_send)
-				# file.close()
+	def switch_handler(self):	
+		if self.connect.ssh_ready:
+			if data_send["control_status"] == "manual":				
+				self.switch.configure(image=self.auto_photo)
+				data_send["control_status"] = "automatic"
+			else:
+				self.switch.configure(image=self.manual_photo)
+				data_send["control_status"] = "manual"
 				
-			except (paramiko.ssh_exception, socket.error) as msg:
-				pass
-					
-		else:
-			data_send['control_status'] = 'Manual'
-			if self.connect.ssh_ready:
-				file = self.ftp_client.open(config['data_exchange_file'],'w')
-				file.close()
-				file.open()
-				file.seek(0)
-				file.truncate()
-				file.write(data_send)
-				file.close()
+			#open/create the data file locally and get handle
+			try:
+				file = open(self.data_local,'w')
+			except IOError:				
+				file = open(self.data_local, 'w+')			
+	
+			#Empty the file
+			file.seek(0)
+			file.truncate()
+			#print the contents of the dictionary to lines such as control_status=manual
+			for k,v in data_send.items():
+				file.write("{0}={1}".format(k,v))
+				file.write("\n")
+			file.close()
+			
+			#send the data
+			try:
+				#put the file to the remote location
+				self.connect.put_file(self.data_local,self.data_remote)
+				
+				#read the raw remote data from file
+				remote_data = self.connect.get_file_lines(self.data_remote)
+				
+				#put the remote data from remote file into data_receive dictionary
+				for item in remote_data:
+					parts = item.split('=')					
+					data_receive[parts[0].strip()] = parts[1].strip()	
+				
+			except Exception as msg:
+				print(msg)		
+			
+			#final check makes sure that what is in the remote location is reflected locally
+			if data_receive['control_status'] != data_send['control_status']:
+					if data_receive['control_status'] == 'manual':
+						data_send['control_status'] = data_receive['control_status']
+						self.switch.configure(image=self.manual_photo)						
+					if data_receive['control_status'] == 'automatic':
+						data_send['control_status'] = data_receive['control_status']
+						self.switch.configure(image=self.auto_photo)
 	
 	def depmap_update(self):
 		file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)	
