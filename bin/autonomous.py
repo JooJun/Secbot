@@ -80,12 +80,13 @@ def avoidance(objects_list):
     if not left:
         log.info('Left side blocked')
         blocked[0] = True
-    elif not middle:
+    if not middle:
         log.info('Middle blocked')
         blocked[1] = True
-    else not right:
+    if not right:
         log.info('Right side blocked')
         blocked[2] = True
+    
 
 
 
