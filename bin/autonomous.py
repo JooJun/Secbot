@@ -19,8 +19,8 @@ def detection(network, session, input_placeholder):
     bottom = 216
     largest_area = 300
     depth.depthmap_func(network, session, input_placeholder)
-    #image_path = '/home/pi/Devel/secbot/files/depth.png'
-    image_path = r'C:\Coding\Secbot\files\depth.png'
+    image_path = '/home/pi/Devel/secbot/files/depth.png'
+    #image_path = r'C:\Coding\Secbot\files\depth.png'
     cv.namedWindow('win', cv.WINDOW_NORMAL)
     im = cv.imread(image_path)
     im = cv.resize(im, dsize=(384, 216), interpolation=cv.INTER_NEAREST)

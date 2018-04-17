@@ -8,16 +8,16 @@ def depthmap_func(network, session, input_node):
 
     # Path settings
     try:
-        #image_path = video_feed()
-        #while not image_path:
-            #image_path = video_feed()
+        image_path = video_feed()
+        while not image_path:
+            image_path = video_feed()
         #image_path = '/home/pi/Devel/secbot/files/cam.jpg'
-        image_path = r'C:\Coding\Secbot\files\cam.jpg'
+        #image_path = r'C:\Coding\Secbot\files\cam.jpg'
     except:
         return None
 
-    #image_output = '/home/pi/Devel/secbot/files/depth.png'
-    image_output = r'C:\Coding\Secbot\files\depth.png'
+    image_output = '/home/pi/Devel/secbot/files/depth.png'
+    #image_output = r'C:\Coding\Secbot\files\depth.png'
 
     # Input size
     #height = 360
@@ -26,9 +26,9 @@ def depthmap_func(network, session, input_node):
     width = 384
 
     # Read Camera image 
-    img = Image.open(image_path)
-    img = img.resize([width, height], Image.ANTIALIAS)
-    #img = cv.resize(image_path, dsize=(width, height), interpolation=cv.INTER_CUBIC)
+    #img = Image.open(image_path)
+    #img = img.resize([width, height], Image.ANTIALIAS)
+    img = cv.resize(image_path, dsize=(width, height), interpolation=cv.INTER_CUBIC)
     img = np.array(img).astype('float32')
     img = np.expand_dims(np.asarray(img), axis = 0)
 
