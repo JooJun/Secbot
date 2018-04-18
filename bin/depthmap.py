@@ -21,9 +21,11 @@ def depthmap_func(network, session, input_node):
 
     # Input size
     #height = 360
-    height = 216
+    #height = 216
+    height = 108
     #width = 640
-    width = 384
+    #width = 384
+    width = 192
 
     # Read Camera image 
     img = cv.resize(image_path, dsize=(width, height), interpolation=cv.INTER_CUBIC)

@@ -36,9 +36,11 @@ start = timer()
 
 # Tensorflow variables 
 #width = 640
-width = 384
+#width = 384
+width = 192
 #height = 360
-height = 216
+#height = 216
+height = 108
 channels = 3
 batch = 1
 model_path = '/home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt'
