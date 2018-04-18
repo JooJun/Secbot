@@ -9,8 +9,6 @@ def depthmap_func(network, session, input_node):
     # Path settings
     try:
         image_path = video_feed()
-        while not image_path:
-            image_path = video_feed()
         #image_path = '/home/pi/Devel/secbot/files/cam.jpg'
         #image_path = r'C:\Coding\Secwin\files\cam.jpg'
     except:
@@ -45,8 +43,11 @@ def conn_video():
         video = ''
     if 'Reply from 192.168.1.10' in video:
         video_conn_ready = True
+        print(video_conn_ready)
+        return video_conn_ready
     else:
         video_conn_ready = False
+        return video_conn_ready
     
 def video_feed_initialiser():
     video_conn_ready = conn_video()
@@ -54,6 +55,7 @@ def video_feed_initialiser():
         vs = WebcamVideoStream(src='rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream').start()
         if str(vs.read()) != 'None':
             video_ready = True
+            print(video_ready)
         else:
             video_ready = False
         return video_ready, vs
@@ -62,15 +64,19 @@ def video_feed_initialiser():
         return video_ready, None
 
 def video_feed():
-    video_ready, vs = video_feed_initializer()
+    #video_ready, vs = video_feed_initializer()
+    vs = WebcamVideoStream(src='rtsp://192.168.1.10:554/user=admin&password=&channel=1&stream=0.sdp?real_stream').start()
+    video_ready = True
     while not video_ready:
         video_ready, vs = video_feed_initializer()
     if video_ready and vs:
         try:
             frame = vs.read()
-            cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA)
+            cvimage = cv.cvtColor(frame, cv.COLOR_BGRA2RGB)
+            print('cv - True')
             return cvimage
         except:
+            print('Exception')
             return None
     else:
         return None

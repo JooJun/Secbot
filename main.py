@@ -25,7 +25,7 @@ if os.path.exists('files/main.log'):
     open('files/main.log', 'w').close()
 
 # Setup program primitives
-mode = 1
+mode = 2
 logging.basicConfig(filename='files/main.log', level=logging.DEBUG)
 
 ########################################################################
@@ -64,7 +64,7 @@ end = timer()
 logging.info('Time taken -tf : {}'.format(end-start))
 
 # Warmup Tensorflow
-for x in range(1, 10):
+for x in range(1, 2):
     start = timer()
     logging.info('{0} run'.format(x))
     depthmap.depthmap_func(network, session, input_placeholder)

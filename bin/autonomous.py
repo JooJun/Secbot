@@ -13,6 +13,7 @@ def autonomous_func(mode, network, session, input_placeholder):
     while mode == 2:
         avoidance(avoidance_dict)
         avoidance_dict_old = avoidance_dict
+        time.sleep(1)
         avoidance_dict = detection(network, session, input_placeholder)
 
 
@@ -34,6 +35,7 @@ def detection(network, session, input_placeholder):
     # Open image path
     image_path = '/home/pi/Devel/secbot/files/depth.png'
     #image_path = r'C:\Coding\Secwin\files\depth.png'
+    image_output = '/home/pi/Devel/secbot/files/contour.png'
 
     # Open image
     im = cv.imread(image_path)
@@ -74,13 +76,20 @@ def detection(network, session, input_placeholder):
             else:
                 pass
 
+            cv.drawContours(img, [c], -1, (125,125,125), 1)
+            cv.circle(img, (cx, cy), 1, (100,100,100), -1) 
+            cv.circle(img, (bottommostx, bottommosty), 1, (100,100,100), -1) 
+            cv.putText(img, "center", (cx -20, cy -20), cv.FONT_HERSHEY_SIMPLEX, 0.3, (100,100,100), 2)
+
+    cv.imwrite(image_output, img)
+
     return avoidance_dict
 
 
 def avoidance(avoidance_dict):
     
     left, middle, right = avoidance_dict['left'], avoidance_dict['middle'], avoidance_dict['right']
-    blocked = {'left': False,'middle': False,'right': False]
+    blocked = {'left': False,'middle': False,'right': False}
     
     # Check and write side variables whether blocked or not
     if not left:
@@ -113,7 +122,7 @@ def avoidance(avoidance_dict):
     motor.turn_left_90()
     avoidance_dict = detection(network, session, input_placeholder)
     left, middle, right = avoidance_dict['left'], avoidance_dict['middle'], avoidance_dict['right']
-    blocked = {'left': False,'middle': False,'right': False]
+    blocked = {'left': False,'middle': False,'right': False}
 
     if not left:
         blocked['left'] = True
@@ -136,7 +145,7 @@ def avoidance(avoidance_dict):
 
     avoidance_dict = detection(network, session, input_placeholder)
     left, middle, right = avoidance_dict['left'], avoidance_dict['middle'], avoidance_dict['right']
-    blocked = {'left': False,'middle': False,'right': False]
+    blocked = {'left': False,'middle': False,'right': False}
 
     if not left:
         blocked['left'] = True
