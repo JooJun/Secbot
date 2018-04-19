@@ -103,26 +103,18 @@ class App:
 		self.switchpanel_ratio = [16,9]					
 		
 		#auto switch picture
-		self.auto_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))
-		# self.auto_img_raw = self.auto_img_raw.resize((170,60),Image.ANTIALIAS)		
+		self.auto_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))		
 		self.auto_photo = ImageTk.PhotoImage(self.auto_img_raw)
 		
 		#manual switch picture
-		self.manual_img_raw = Image.open('{0}/manual_button.png'.format(config['content_folder']))
-		# self.manual_img_raw = self.manual_img_raw.resize((170,60),Image.ANTIALIAS)		
-		self.manual_photo = ImageTk.PhotoImage(self.manual_img_raw)
-		
-		#Panel auto/manual switch initialise
-		# self.switch_canvas = Canvas(self.switch_panel,bg='white',height=self.frame2.winfo_height()/5,width=self.frame2.winfo_width()/3)
-		# self.switch_canvas.grid()
+		self.manual_img_raw = Image.open('{0}/manual_button.png'.format(config['content_folder']))	
+		self.manual_photo = ImageTk.PhotoImage(self.manual_img_raw)	
 
 		#self.switch = tk.Button(self.switch_canvas,width=1,height=1,command=self.switch_handler,relief=FLAT,activebackground='black')
 		self.switch = tk.Button(self.frame2,width=1,height=1,command=self.switch_handler,relief=FLAT,activebackground='black')
 		self.switch.configure(command=self.switch_handler)
 		self.switch.grid()
-		self.switch.configure(image=self.manual_photo,bg='black')		
-		
-		# switch_window = self.switch_panel.create_window(1,1,window=self.switch)
+		self.switch.configure(image=self.manual_photo,bg='black')
 		
 		#initialise the control_status
 		data_send["control_status"] = "manual"
@@ -179,17 +171,18 @@ class App:
 	##create instance of other classes
 		self.connect = Connect(config)		
 		
-	#Start functions/threads:-
+	#Start functions/threads:-	
 		self.write_to_console()
-		# self.draw()
-		# self.video_feed()
-		# self.video_feed_initialiser()
-		# self.depmap_update()
+		seld.depmap_update()
+		# #Update the console thread
+		# self.console_thread = threading.Thread(target=self.write_to_console,args=())
+		# self.console_thread.daemon = True
+		# self.console_thread.start()
 		
-		#Update the depthmap thread
-		self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
-		self.depmap_thread.daemon = True
-		self.depmap_thread.start()  
+		# #Update the depthmap thread
+		# self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
+		# self.depmap_thread.daemon = True
+		# self.depmap_thread.start()  
 		
 		#Video feed thread
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
@@ -259,9 +252,9 @@ class App:
 				self.auto_photo = ImageTk.PhotoImage(self.auto_img_raw)
 				self.switch.configure(image=self.auto_photo)
 								
-		self.switch.grid()	
+		self.switch.grid()
 		
-		self.master.after(100,self.draw)
+		self.master.after(66,self.draw)
 	
 	def depmap_update(self):
 		file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)
@@ -328,7 +321,7 @@ class App:
 				self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array   
 			except:
 				self.video_frame.configure(bg='white')	
-		self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds		
+		self.master.after(66, self.video_feed)# cause the function to be called after X milliseconds		
 
 	def switch_handler(self):	
 		if self.connect.ssh_ready:
