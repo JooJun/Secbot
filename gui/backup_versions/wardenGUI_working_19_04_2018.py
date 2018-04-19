@@ -7,7 +7,6 @@ from platform import system as system_name
 from subprocess import call as system_call 
 from threading import Thread
 import subprocess
-from multiprocessing import Process
 
 #ssh/sftp
 import paramiko
@@ -104,18 +103,26 @@ class App:
 		self.switchpanel_ratio = [16,9]					
 		
 		#auto switch picture
-		self.auto_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))		
+		self.auto_img_raw = Image.open('{0}/auto_button.png'.format(config['content_folder']))
+		# self.auto_img_raw = self.auto_img_raw.resize((170,60),Image.ANTIALIAS)		
 		self.auto_photo = ImageTk.PhotoImage(self.auto_img_raw)
 		
 		#manual switch picture
-		self.manual_img_raw = Image.open('{0}/manual_button.png'.format(config['content_folder']))	
-		self.manual_photo = ImageTk.PhotoImage(self.manual_img_raw)	
+		self.manual_img_raw = Image.open('{0}/manual_button.png'.format(config['content_folder']))
+		# self.manual_img_raw = self.manual_img_raw.resize((170,60),Image.ANTIALIAS)		
+		self.manual_photo = ImageTk.PhotoImage(self.manual_img_raw)
+		
+		#Panel auto/manual switch initialise
+		# self.switch_canvas = Canvas(self.switch_panel,bg='white',height=self.frame2.winfo_height()/5,width=self.frame2.winfo_width()/3)
+		# self.switch_canvas.grid()
 
 		#self.switch = tk.Button(self.switch_canvas,width=1,height=1,command=self.switch_handler,relief=FLAT,activebackground='black')
 		self.switch = tk.Button(self.frame2,width=1,height=1,command=self.switch_handler,relief=FLAT,activebackground='black')
 		self.switch.configure(command=self.switch_handler)
 		self.switch.grid()
-		self.switch.configure(image=self.manual_photo,bg='black')
+		self.switch.configure(image=self.manual_photo,bg='black')		
+		
+		# switch_window = self.switch_panel.create_window(1,1,window=self.switch)
 		
 		#initialise the control_status
 		data_send["control_status"] = "manual"
@@ -172,29 +179,22 @@ class App:
 	##create instance of other classes
 		self.connect = Connect(config)		
 		
-	#Start functions/threads:-	
+	#Start functions/threads:-
 		self.write_to_console()
-		
-		#self.depmap_update()
-		# #Update the console thread
-		# self.console_thread = threading.Thread(target=self.write_to_console,args=())
-		# self.console_thread.daemon = True
-		# self.console_thread.start()
+		# self.draw()
+		# self.video_feed()
+		# self.video_feed_initialiser()
+		# self.depmap_update()
 		
 		#Update the depthmap thread
 		self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
 		self.depmap_thread.daemon = True
 		self.depmap_thread.start()  
 		
-		# #Video feed thread
+		#Video feed thread
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
 		self.video_feed_thread.daemon = True
 		self.video_feed_thread.start() 
-		
-		# # #Video feed thread attempt with multiprocess
-		# self.video_feed_thread = Process(group=None,name='vid_feed',target=self.video_feed,args=())
-		# self.video_feed_thread.daemon = True
-		# self.video_feed_thread.start() 
 			
 		#Video feed initialiser thread
 		self.video_feed_init_thread = Thread(target=self.video_feed_initialiser,args=())
@@ -259,7 +259,7 @@ class App:
 				self.auto_photo = ImageTk.PhotoImage(self.auto_img_raw)
 				self.switch.configure(image=self.auto_photo)
 								
-		self.switch.grid()
+		self.switch.grid()	
 		
 		self.master.after(100,self.draw)
 	
@@ -323,12 +323,9 @@ class App:
 		if self.connect.video_ready:
 			self.video_frame.configure(bg='black')
 			try:
-				frame = self.vs.read()  #read the next frame
-
-				#if frame:
-			    #(frame, cv.COLOR_BGR2RGBA) #colours picture correctly              
-				cvimage = cv.cvtColor(frame, cv.COLOR_BGRA2RGB) #colours picture correctly			
-				self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array 			
+				frame = self.vs.read()  #read the next frame  
+				cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA) #colours picture correctly              
+				self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array   
 			except:
 				self.video_frame.configure(bg='white')	
 		self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds		
