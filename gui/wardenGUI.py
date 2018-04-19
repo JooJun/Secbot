@@ -150,7 +150,7 @@ class App:
 		self.frame4.grid_rowconfigure(0,weight = 1)
 		self.frame4.grid_columnconfigure(0,weight = 1)
 		
-		self.depthmap_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="white")
+		self.depthmap_frame = Label(self.frame4,width=self.frame4.winfo_width(),height=self.frame4.winfo_height(),background="white", relief=RIDGE)
 		self.depthmap_frame.grid(sticky = 'nsew')		
 		
 		self.depthmap_modified_time = 0
@@ -158,7 +158,7 @@ class App:
 		self.depthmap_img_remote = config['depthmap_file_path_remote'] 
 		self.depthmap_img_local = './'+config['content_folder']+config['depthmap_file_path_local'] 
 		
-		self.depthmap_dis_img_path = '{0}/vid_disconnect.jpg'.format(config['content_folder'])
+		self.depthmap_dis_img_path = '{0}/depmap_disconnect.jpg'.format(config['content_folder'])
 		self.depthmap_show_image = Image.open(self.depthmap_dis_img_path)	
 		
 		self.depthmap_ratio = [16,9]
