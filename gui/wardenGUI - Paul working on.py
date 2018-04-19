@@ -7,6 +7,7 @@ from platform import system as system_name
 from subprocess import call as system_call 
 from threading import Thread
 import subprocess
+from multiprocessing import Process
 
 #ssh/sftp
 import paramiko
@@ -173,21 +174,27 @@ class App:
 		
 	#Start functions/threads:-	
 		self.write_to_console()
-		seld.depmap_update()
+		
+		#self.depmap_update()
 		# #Update the console thread
 		# self.console_thread = threading.Thread(target=self.write_to_console,args=())
 		# self.console_thread.daemon = True
 		# self.console_thread.start()
 		
-		# #Update the depthmap thread
-		# self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
-		# self.depmap_thread.daemon = True
-		# self.depmap_thread.start()  
+		#Update the depthmap thread
+		self.depmap_thread = threading.Thread(target=self.depmap_update,args=())
+		self.depmap_thread.daemon = True
+		self.depmap_thread.start()  
 		
-		#Video feed thread
+		# #Video feed thread
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
 		self.video_feed_thread.daemon = True
 		self.video_feed_thread.start() 
+		
+		# # #Video feed thread attempt with multiprocess
+		# self.video_feed_thread = Process(group=None,name='vid_feed',target=self.video_feed,args=())
+		# self.video_feed_thread.daemon = True
+		# self.video_feed_thread.start() 
 			
 		#Video feed initialiser thread
 		self.video_feed_init_thread = Thread(target=self.video_feed_initialiser,args=())
@@ -254,7 +261,7 @@ class App:
 								
 		self.switch.grid()
 		
-		self.master.after(66,self.draw)
+		self.master.after(100,self.draw)
 	
 	def depmap_update(self):
 		file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)
@@ -316,12 +323,15 @@ class App:
 		if self.connect.video_ready:
 			self.video_frame.configure(bg='black')
 			try:
-				frame = self.vs.read()  #read the next frame  
-				cvimage = cv.cvtColor(frame, cv.COLOR_BGR2RGBA) #colours picture correctly              
-				self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array   
+				frame = self.vs.read()  #read the next frame
+
+				#if frame:
+			    #(frame, cv.COLOR_BGR2RGBA) #colours picture correctly              
+				cvimage = cv.cvtColor(frame, cv.COLOR_BGRA2RGB) #colours picture correctly			
+				self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array 			
 			except:
 				self.video_frame.configure(bg='white')	
-		self.master.after(66, self.video_feed)# cause the function to be called after X milliseconds		
+		self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds		
 
 	def switch_handler(self):	
 		if self.connect.ssh_ready:
