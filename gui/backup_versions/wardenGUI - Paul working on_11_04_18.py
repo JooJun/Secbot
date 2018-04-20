@@ -103,8 +103,6 @@ class App:
 		
 		data_send['control_status'] = 'Manual'
 		
-				
-		
 		###frame 3 contains the CONSOLE###
 		self.frame3 = Frame(self.master, background="black")
 		self.frame3.grid(column = 0, row = 1, sticky='nsew')    
@@ -317,8 +315,7 @@ class App:
 				self.video_frame.imgtk = imagetk  # stops garbage collection            
 				self.video_frame.config(image=imagetk)  # show the image in image_box
 			except:
-					pass
-					
+					pass					
 		else:   
 				#print("should be setting video window to the video not there image")
 				self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
