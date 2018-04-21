@@ -1,6 +1,11 @@
 # Git ignore list
 
-depthmaps/
+files/*
 
 lib/
 
+*/__pycache__/
+
+*/*.swp
+
+*.swp
