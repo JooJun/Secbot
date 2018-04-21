@@ -1,0 +1,30 @@
+#screen resolution
+resolution_width = 600
+resolution_height = 1000
+
+#Pi IP address
+pi_ip = 192.168.1.2
+#pi_ip = 192.168.1.121
+
+#Camera IP address
+cam_ip = 192.168.1.10
+
+#Pi username and password (this will be replaced with something more secure eventually)
+pi_username = pi
+pi_password = vadelma77
+
+#Name or path of content folder locally content or /content/pictures
+content_folder = content
+
+#console file path and name (on the Pi and local copy)
+console_remote = /home/pi/Devel/secbot/files/main.log
+console_local = main.log
+
+#depthmap file paths and names (on the Pi and local copy)
+depthmap_file_path_remote = /home/pi/Devel/secbot/files/depth.png
+depthmap_file_path_local = /depth/depth.png
+
+#Data send file path and name
+data_remote = /home/pi/Devel/secbot/files/data.txt
+data_local = data.txt
+

@@ -8,6 +8,7 @@ from subprocess import call as system_call
 from threading import Thread
 import subprocess
 from multiprocessing import Process
+import multiprocessing
 
 #ssh/sftp
 import paramiko
@@ -202,9 +203,18 @@ class App:
 		self.video_feed_init_thread.start()	
 		
 		#draw thread
-		self.draw_thread = Thread(target=self.draw,args=())
-		self.draw_thread.daemon = True
-		self.draw_thread.start()	
+		# self.draw_thread = Thread(target=self.draw,args=())
+		# self.draw_thread.daemon = True
+		# self.draw_thread.start()	
+		
+		#Attempt at multiprocessing draw thread
+		self.draw_process = Process(target=self.draw(), args=())
+		self.draw_process.daeomon = True
+		self.draw_process.start()
+		# self.draw_process.run()
+		print(self.draw_process.is_alive())
+		
+		#self.draw()
 	
 	###Class functions###################################################
 	
@@ -218,7 +228,16 @@ class App:
 		else:	
 			return image
 	
+	# def draw(self):
+		# self.draw_process = Process(target=self._draw(),args=())
+		# self.draw_process.daemon = True
+		# self.draw_process.start()
+		# self.draw_process.join()
+	
 	def draw(self):	
+		name = multiprocessing.current_process().name
+		print("draw function",name)
+		# print(self.draw_process.is_alive()==True)
 		self.draw_list = [{
 						'exists':self.depthmap_file_exists
 						,'frame':self.depthmap_frame
@@ -264,6 +283,8 @@ class App:
 		self.master.after(100,self.draw)
 	
 	def depmap_update(self):
+		name = multiprocessing.current_process().name
+		print("depmap function",name)
 		file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)
 		if file_data != None:
 			if file_data['file_exists']:
@@ -402,7 +423,7 @@ res = (int(config['resolution_width']),int(config['resolution_height']))
 
 if __name__ == '__main__':
         #create tkinter root
-        root = Tk()
+		root = Tk()
         #create instance of app class
-        app = App(root,res)     
-        root.mainloop()
+		app = App(root,res) 		
+		root.mainloop()

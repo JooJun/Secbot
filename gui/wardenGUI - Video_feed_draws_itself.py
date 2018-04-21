@@ -225,23 +225,13 @@ class App:
 						,'image':self.depthmap_show_image
 						,'disconnect_image':self.depthmap_dis_img_path
 						,'ratio':self.depthmap_ratio
-						
-						},
-						
-						{
-						'exists':self.depthmap_file_exists
-						,'frame':self.video_frame
-						,'image':self.vid_show_image
-						,'disconnect_image':self.vid_dis_img_path
-						,'ratio':self.vid_ratio
 						}]
 
 		#loops through and draw each item in the list
 		for item in self.draw_list:
 			if (item['image'].width != item['frame'].winfo_width()) or (item['image'].height != item['frame'].winfo_height()):
 				if not item['exists']:					
-					item['image'] = Image.open(item['disconnect_image'])
-						
+					item['image'] = Image.open(item['disconnect_image'])						
 				self.temp_draw_image = self.resize(item['image'],item['frame'],item['ratio'])		
 				item['image'] = ImageTk.PhotoImage(self.temp_draw_image)					
 			item['frame'].config(image=item['image'])
@@ -324,15 +314,24 @@ class App:
 			self.video_frame.configure(bg='black')
 			try:
 				frame = self.vs.read()  #read the next frame
-
-				#if frame:
 			    #(frame, cv.COLOR_BGR2RGBA) #colours picture correctly              
 				cvimage = cv.cvtColor(frame, cv.COLOR_BGRA2RGB) #colours picture correctly			
-				self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array 			
+				#self.vid_show_image = Image.fromarray(cvimage)#PIL, processes the matrix array 
+				current_image = Image.fromarray(cvimage)        #Something to do with PIL, processes the matrix array                   
+				imagetk = ImageTk.PhotoImage(image=current_image)  # convert image for tkinter
+				self.video_frame.imgtk = imagetk  # stops garbage collection            
+				self.video_frame.config(image=imagetk)  # show the image in image_box
 			except:
 				self.video_frame.configure(bg='white')	
-		self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds		
-
+			
+		else:
+			self.vid_dis_raw_img = Image.open(self.vid_dis_img_path)
+			if (self.vid_dis_raw_img.width != self.video_frame.winfo_width()) or (self.vid_dis_raw_img.height != self.video_frame.winfo_height()):
+				self.vid_dis_raw_img = self.resize(self.vid_dis_raw_img,self.video_frame,self.vid_ratio)
+			self.vid_dis_img = ImageTk.PhotoImage(self.vid_dis_raw_img)                     
+			self.video_frame.config(image=self.vid_dis_img)     
+		self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds	
+			
 	def switch_handler(self):	
 		if self.connect.ssh_ready:
 			if data_send["control_status"] == "manual":				
