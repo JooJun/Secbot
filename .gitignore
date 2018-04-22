@@ -9,3 +9,5 @@ lib/
 */*.swp
 
 *.swp
+
+gui/content/depth/*
