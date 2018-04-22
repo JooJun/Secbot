@@ -13,7 +13,9 @@ def autonomous_func(mode):
     while mode == 'autonomous':
         avoidance(avoidance_dict)
         avoidance_dict_old = avoidance_dict
-        avoidance_dict = detection(network, session, input_placeholder)
+        avoidance_dict = detection()
+        if not avoidance_dict:
+            avoidance_dict = avoidance_dict_old
         with open('/home/pi/Devel/secbot/files/data.txt', 'r') as file:
             parts = file.readline().split('=')                             
             mode = parts[1].strip()
@@ -40,6 +42,9 @@ def detection():
     image_output = '/home/pi/Devel/secbot/files/contour.png'
 
     # Open image
+    img_size = os.path.getsize(image_path)
+    if img_size == 0:
+        return None
     im = cv.imread(image_path)
     im = cv.resize(im, dsize=(img_width, img_height), interpolation=cv.INTER_NEAREST)
     imgray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
