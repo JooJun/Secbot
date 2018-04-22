@@ -8,6 +8,7 @@ from subprocess import call as system_call
 from threading import Thread
 import subprocess
 from multiprocessing import Process
+import content.data_status as data_status 
 
 #ssh/sftp
 import paramiko
@@ -41,6 +42,7 @@ with open("config.txt") as config_file:
 
 class App:
         def __init__(self,master,res): 
+                
                 #Grab the camera ip from config
                 self.cam_ip = config['cam_ip']
                 
@@ -91,7 +93,8 @@ class App:
                 #Picture to display when no video present
                 self.vid_dis_img_path = '{0}/vid_disconnect.jpg'.format(config['content_folder'])
                 #initialise as default image to show
-                self.vid_show_image = Image.open(self.vid_dis_img_path)
+                self.vid_show_image = cv.imread(self.vid_dis_img_path)
+                self.vid_show_image = Image.fromarray(self.vid_show_image)
                 
                 self.vid_ratio = [16,9]
                 
@@ -157,15 +160,15 @@ class App:
                 self.depthmap_file_exists = False
                 self.depthmap_img_remote = config['depthmap_file_path_remote'] 
                 self.depthmap_img_local = './'+config['content_folder']+config['depthmap_file_path_local'] 
+                self.depthmap_img_cam = './'+config['content_folder']+config['depthmap_file_path_cam']  
                 
                 self.depthmap_dis_img_path = '{0}/depmap_disconnect.jpg'.format(config['content_folder'])
-                self.depthmap_show_image = Image.open(self.depthmap_dis_img_path)       
+                self.depthmap_show_image = cv.imread(self.depthmap_dis_img_path)       
                 
                 self.depthmap_ratio = [16,9]
                 
                 #delete local data/log files
                 try:
-                        os.remove(self.depthmap_img_local)
                         os.remove(self.console_local)
                 except:
                         pass
@@ -226,14 +229,15 @@ class App:
                 self.draw_list = [{
                                                 'exists':self.depthmap_file_exists
                                                 ,'frame':self.depthmap_frame
-                                                ,'image':self.depthmap_show_image
+                                                ,'image':Image.fromarray(self.depthmap_show_image)
                                                 ,'disconnect_image':self.depthmap_dis_img_path
                                                 ,'ratio':self.depthmap_ratio
+                                                
                                                 
                                                 },
                                                 
                                                 {
-                                                'exists':self.depthmap_file_exists
+                                                'exists':self.connect.video_ready
                                                 ,'frame':self.video_frame
                                                 ,'image':self.vid_show_image
                                                 ,'disconnect_image':self.vid_dis_img_path
@@ -245,7 +249,7 @@ class App:
                         if (item['image'].width != item['frame'].winfo_width()) or (item['image'].height != item['frame'].winfo_height()):
                                 if not item['exists']:                                  
                                         item['image'] = Image.open(item['disconnect_image'])
-                                                
+                                 
                                 self.temp_draw_image = self.resize(item['image'],item['frame'],item['ratio'])           
                                 item['image'] = ImageTk.PhotoImage(self.temp_draw_image)                                        
                         item['frame'].config(image=item['image'])
@@ -268,16 +272,25 @@ class App:
                 self.master.after(100,self.draw)
         
         def depmap_update(self):
-                file_data = self.connect.get_file(self.depthmap_img_remote,self.depthmap_img_local,self.depthmap_modified_time)
-                if file_data != None:
+                file_data = {'modified_time': None, 'file_size': None, 'file_exists': None}
+                file_data['file_exists'] = os.path.isfile(self.depthmap_img_local)
+                file_data['modified_time'] = os.path.getctime(self.depthmap_img_local)
+                file_data['file_size'] = os.path.getsize(self.depthmap_img_local)
+                print('{} , {}, {}'.format(file_data['modified_time'], file_data['file_size'], file_data['file_exists']))
+                if file_data['file_size'] != 0:
                         if file_data['file_exists']:
                                 self.depthmap_frame.configure(bg='black')
                                 if file_data['modified_time'] != self.depthmap_modified_time and file_data['file_size'] != 0:
                                         self.depthmap_modified_time = file_data['modified_time']        
                                 self.depthmap_file_exists = True                
                         try:
-                                self.depthmap_show_image = Image.open(self.depthmap_img_local)
-                        except:
+                                self.depthmap_show_image = cv.imread(self.depthmap_img_local)
+                                if self.connect.ssh_ready:
+                                        self.connect.put_file(self.depthmap_img_local, self.depthmap_file_path_remote)
+
+                                #self.depthmap_show_image = self.depthmap_show_image.load()
+                                #self.depthmap_show_image.verify()
+                        except Exception:
                                 self.depthmap_file_exists = False       
                                 self.depthmap_frame.configure(bg='white')
                 self.master.after(1000, self.depmap_update)     
@@ -336,14 +349,15 @@ class App:
                         except:
                                 self.video_frame.configure(bg='white')  
                 self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds           
+
         def video_save(self):
             if self.connect.video_ready:
                 try:
                     frame = self.vs.read()
                     cvimage = cv.cvtColor(frame, cv.COLOR_BGRA2RGB)
                     vid_image = Image.fromarray(cvimage)
-                    Image.save('./'+config['content_folder']+config['depthmap_file_path_cam']) 
-                except:
+                    vid_image.save('./'+config['content_folder']+config['depthmap_file_path_cam']) 
+                except Exception:
                     pass
             self.master.after(2000, self.video_save)
 

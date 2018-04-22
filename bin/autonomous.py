@@ -7,17 +7,19 @@ import time
 
 log = logging.getLogger(__name__)
 
-def autonomous_func(mode, network, session, input_placeholder):
-    avoidance_dict = detection(network, session, input_placeholder)
+def autonomous_func(mode):
+    avoidance_dict = detection()
 
-    while mode == 2:
+    while mode == 'autonomous':
         avoidance(avoidance_dict)
         avoidance_dict_old = avoidance_dict
-        time.sleep(1)
         avoidance_dict = detection(network, session, input_placeholder)
+        with open('/home/pi/Devel/secbot/files/data.txt', 'r') as file:
+            parts = file.readline().split('=')                             
+            mode = parts[1].strip()
 
 
-def detection(network, session, input_placeholder):
+def detection():
     # Variables 
     avoidance_dict = {'left': None, 'middle': None, 'right':None}
     img_height = 216

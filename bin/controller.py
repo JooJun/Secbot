@@ -1,7 +1,6 @@
 from fcntl import ioctl
 
 def controller_func(mode):
-    status = True
     count = 0
     console_path = '/home/pi/console.txt'
 
@@ -71,7 +70,7 @@ def controller_func(mode):
         motors.setSpeeds(0, 0)
 
         # Main event loop
-        while status:
+        while mode == 'manual':
                         try:
                                 console = open(console_path,'a')
                                 current_time = str(datetime.datetime.now())[:19]
@@ -111,7 +110,9 @@ def controller_func(mode):
                         except:
                                 pass
     #Stop the motors if there is an exception of user presses Ctrl-C to kill process
-
+                        with open('/home/pi/Devel/secbot/files/data.txt', 'r') as file:
+                            parts = file.readline().split('=')
+                            mode = parts[1].strip()
     finally:
         motors.setSpeeds(0, 0)
         motors.disable()

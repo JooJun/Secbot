@@ -1,0 +1,17 @@
+INFO:root:Set up...
+INFO:root:Warming up...
+INFO:tensorflow:Restoring parameters from /home/pi/Devel/secbot/lib/fcrn/models/NYU_FCRN.ckpt
+INFO:root:Time taken -tf : 54.42380419799997
+INFO:root:1 run
+INFO:root:Time taken -cam : 10.881574214000011
+INFO:root:Warming up... Done!
+INFO:root:Starting autonomous control...
+INFO:bin.autonomous:Left completely blocked
+INFO:bin.autonomous:Middle completely blocked
+INFO:bin.autonomous:Right side clear, turning right
+INFO:bin.autonomous:Left completely blocked
+INFO:bin.autonomous:Middle completely blocked
+INFO:bin.autonomous:Right side clear, turning right
+INFO:bin.autonomous:Left completely blocked
+INFO:bin.autonomous:Middle completely blocked
+INFO:bin.autonomous:Right completely blocked

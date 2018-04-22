@@ -20,7 +20,7 @@ if os.path.exists('files/main.log'):
     open('files/main.log', 'w').close()
 
 # Setup program primitives
-mode = 2
+mode = 'autonomous'
 logging.basicConfig(filename='files/main.log', level=logging.DEBUG)
 
 ########################################################################
@@ -28,11 +28,11 @@ logging.info('Set up...')
 
 while mode:
 
-    if mode == 1:
+    if mode == 'manual':
         logging.info('Starting manual control...')
         mode = controller.controller_func(mode)
 
-    if mode == 2:
+    if mode == 'autonomous':
         logging.info('Starting autonomous control...')
         mode = auto.autonomous_func(mode)
 
