@@ -23,6 +23,7 @@ console_local = main.log
 #depthmap file paths and names (on the Pi and local copy)
 depthmap_file_path_remote = /home/pi/Devel/secbot/files/depth.png
 depthmap_file_path_local = /depth/depth.png
+depthmap_file_path_cam = /depth/cam.jpg
 
 #Data send file path and name
 data_remote = /home/pi/Devel/secbot/files/data.txt

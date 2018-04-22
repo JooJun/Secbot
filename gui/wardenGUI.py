@@ -190,6 +190,10 @@ class App:
 		self.video_feed_thread = Thread(target=self.video_feed,args=())
 		self.video_feed_thread.daemon = True
 		self.video_feed_thread.start() 
+
+                self.video_feed_save = Thread(target=self.video_save, args=())
+                self.video_feed_save.daemon = True
+                self.video_feed_save.start()
 		
 		# # #Video feed thread attempt with multiprocess
 		# self.video_feed_thread = Process(group=None,name='vid_feed',target=self.video_feed,args=())
@@ -332,6 +336,16 @@ class App:
 			except:
 				self.video_frame.configure(bg='white')	
 		self.master.after(100, self.video_feed)# cause the function to be called after X milliseconds		
+        def video_save(self):
+            if self.connect.video_ready:
+                try:
+                    frame = self.vs.read()
+                    cvimage = cv.cvtColor(frame, cv.COLOR_BGRA2RGB)
+                    vid_image = Image.fromarray(cvimage)
+                    Image.save('./'+config['content_folder']+config['depthmap_file_path_cam']) 
+                except:
+                    pass
+            self.master.after(2000, self.video_save)
 
 	def switch_handler(self):	
 		if self.connect.ssh_ready:

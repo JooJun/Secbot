@@ -30,7 +30,7 @@ def detection(network, session, input_placeholder):
     largest_area = 10000
 
     # Run depthmap on camera
-    depth.depthmap_func(network, session, input_placeholder)
+    #depth.depthmap_func(network, session, input_placeholder)
 
     # Open image path
     image_path = '/home/pi/Devel/secbot/files/depth.png'
